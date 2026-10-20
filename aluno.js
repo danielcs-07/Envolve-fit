@@ -401,42 +401,44 @@ $("student-day-filter").addEventListener("change", renderWorkouts);
 function renderHistory() {
   const container = $("student-history");
   container.replaceChildren();
+  const term = $("student-history-search").value.trim().toLocaleLowerCase("pt-BR");
+  const filtered = logs.filter(log => String(log.workoutName || "Treino").toLocaleLowerCase("pt-BR").includes(term));
 
-  if (!logs.length) {
-    container.append(
-      make("p", "empty-text", "Você ainda não concluiu treinos.")
-    );
+  $("student-history-summary").textContent =
+    `${filtered.length} treino${filtered.length === 1 ? "" : "s"} registrado${filtered.length === 1 ? "" : "s"}`;
+
+  if (!filtered.length) {
+    container.append(make("p", "empty-text",
+      logs.length ? "Nenhum registro encontrado." : "Você ainda não concluiu treinos."));
     return;
   }
 
-  logs.forEach(log => {
-    const card = make("article", "panel-card");
-
-    card.append(
-      make("h3", "", log.workoutName || "Treino"),
-      make("p", "muted", dateText(log.createdAt))
-    );
+  filtered.forEach(log => {
+    const card = make("article", "panel-card history-card");
+    const heading = make("div", "card-heading");
+    const info = make("div");
+    info.append(make("h3", "", log.workoutName || "Treino"));
+    info.append(make("p", "muted", dateText(log.createdAt)));
+    const total = trainingVolume(log);
+    const volume = make("span", "volume-pill", `${ptNumber(total, 1)} kg de volume`);
+    heading.append(info, volume);
+    card.append(heading);
 
     (log.exercises || []).forEach(exercise => {
       const block = make("div", "log-exercise");
       block.append(make("strong", "", exercise.name));
 
       (exercise.series || []).forEach((series, index) => {
-        block.append(
-          make(
-            "p",
-            "muted",
-            `Série ${index + 1}: ${series.weight} kg • ${series.reps} repetições`
-          )
-        );
+        block.append(make("p", "muted",
+          `Série ${index + 1}: ${series.weight} kg · ${series.reps} repetições`));
       });
 
       card.append(block);
     });
-
     container.append(card);
   });
 }
+$("student-history-search").addEventListener("input", renderHistory);
 
 function drawBars(container, entries, unit) {
   container.replaceChildren();
@@ -471,71 +473,70 @@ function drawBars(container, entries, unit) {
 }
 
 function renderProgress() {
-  const sorted = [...measurements].sort(
-    (a, b) =>
-      (a.createdAt?.seconds || 0) -
-      (b.createdAt?.seconds || 0)
+  const sorted = [...measurements].sort((a, b) =>
+    (timestampDate(a.createdAt)?.getTime() || 0) -
+    (timestampDate(b.createdAt)?.getTime() || 0)
   );
-
-  const weightPoints = sorted.map(item => ({
-    value: Number(item.weight),
-    label: item.createdAt?.toDate
-      ? item.createdAt.toDate().toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit"
-        })
-      : "—"
-  }));
-
-  drawBars($("student-weight-chart"), weightPoints, "kg");
-
-  const strengthPoints = [...logs].reverse().map(log => {
-    let maxWeight = 0;
-
-    (log.exercises || []).forEach(exercise => {
-      (exercise.series || []).forEach(series => {
-        maxWeight = Math.max(
-          maxWeight,
-          Number(series.weight) || 0
-        );
-      });
-    });
-
+  const weights = sorted.map(item => {
+    const date = timestampDate(item.createdAt);
     return {
-      value: maxWeight,
-      label: log.createdAt?.toDate
-        ? log.createdAt.toDate().toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit"
-          })
-        : "—"
+      value: Number(item.weight) || 0,
+      label: date ? date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "—"
     };
-  }).filter(point => point.value > 0);
+  }).filter(item => item.value > 0);
+  drawBars($("student-weight-chart"), weights, "kg");
 
-  drawBars($("student-strength-chart"), strengthPoints, "kg");
+  const select = $("student-exercise-filter");
+  const previous = select.value;
+  const names = uniqueExercises(logs);
+  select.replaceChildren(new Option("Selecione um exercício", ""));
+  names.forEach(name => select.add(new Option(name, name)));
+  if (names.includes(previous)) select.value = previous;
+  else if (names.length) select.value = names[0];
+
+  const points = bestSetProgress(logs, select.value);
+  drawBars($("student-strength-chart"), points, "kg");
+
+  const latest = sorted.at(-1);
+  $("stat-weight").textContent = latest ? `${latest.weight} kg` : "—";
+  $("stat-measurements").textContent = measurements.length;
+
+  const summary = $("student-progress-summary");
+  summary.replaceChildren();
+  const cards = [
+    ["📅", "Treinos nos últimos 7 dias", String(recentLogs(logs).length)],
+    ["🏋️", "Volume total registrado", `${ptNumber(logs.reduce((n, item) => n + trainingVolume(item), 0), 1)} kg`],
+    ["📊", "Exercícios registrados", String(names.length)]
+  ];
+  cards.forEach(([icon, title, value]) => {
+    const card = make("div", "mini-stat");
+    card.append(
+      make("span", "mini-stat-icon", icon),
+      make("span", "mini-stat-label", title),
+      make("strong", "", value)
+    );
+    summary.append(card);
+  });
 
   const list = $("student-measurements");
   list.replaceChildren();
-
-  [...measurements].reverse().forEach(item => {
+  if (!sorted.length) {
+    list.append(make("p", "empty-text", "Nenhum registro de medidas ainda."));
+  }
+  [...sorted].reverse().forEach(item => {
     const card = make("article", "panel-card");
-
     card.append(
-      make("strong", "", `${item.weight} kg • ${item.height} cm`),
+      make("strong", "", `${item.weight} kg · ${item.height} cm`),
       make("p", "muted", dateText(item.createdAt))
     );
-
     list.append(card);
   });
-
-  const latest = sorted.at(-1);
-
-  $("stat-weight").textContent = latest
-    ? `${latest.weight} kg`
-    : "—";
-
-  $("stat-measurements").textContent = measurements.length;
 }
+
+$("student-exercise-filter").addEventListener("change", () => {
+  drawBars($("student-strength-chart"),
+    bestSetProgress(logs, $("student-exercise-filter").value), "kg");
+});
 
 async function refreshData() {
   const [workoutSnap, logSnap, measurementSnap] = await Promise.all([
@@ -588,35 +589,46 @@ $("training-form").onsubmit = async event => {
   event.preventDefault();
 
   if (!selectedWorkout || saving) return;
+  const rows = [...document.querySelectorAll("#training-exercises .series-row")];
+  const completed = rows.filter(row => row.querySelector('[data-type="done"]')?.checked);
+
+  if (!completed.length) {
+    $("training-message").textContent = "Marque pelo menos uma série como concluída antes de salvar.";
+    return;
+  }
+
+  for (const row of completed) {
+    const weight = row.querySelector('[data-type="weight"]');
+    const reps = row.querySelector('[data-type="reps"]');
+    if (weight.value.trim() === "" || reps.value.trim() === "" ||
+      !Number.isFinite(Number(weight.value)) || !Number.isFinite(Number(reps.value)) ||
+      Number(weight.value) < 0 || Number(weight.value) > 1000 ||
+      !Number.isInteger(Number(reps.value)) || Number(reps.value) < 1 || Number(reps.value) > 1000) {
+      $("training-message").textContent = "Preencha carga e repetições válidas em cada série marcada.";
+      weight.focus();
+      return;
+    }
+  }
+
+  if (completed.length < rows.length && !confirm(
+    `Você marcou ${completed.length} de ${rows.length} séries. Salvar somente as concluídas?`
+  )) return;
 
   saving = true;
   $("finish-workout").disabled = true;
   $("training-message").textContent = "Salvando treino...";
 
   try {
-    const exercises = selectedWorkout.exercises.map(
-      (exercise, index) => {
-        const group = document.querySelector(
-          `[data-exercise-index="${index}"]`
-        );
-
-        const series = [
-          ...group.querySelectorAll(".series-row")
-        ].map(row => ({
-          weight: Number(
-            row.querySelector('[data-type="weight"]').value
-          ),
-          reps: Number(
-            row.querySelector('[data-type="reps"]').value
-          )
+    const exercises = (selectedWorkout.exercises || []).map((exercise, index) => {
+      const group = document.querySelector(`[data-exercise-index="${index}"]`);
+      const series = [...group.querySelectorAll(".series-row")]
+        .filter(row => row.querySelector('[data-type="done"]').checked)
+        .map(row => ({
+          weight: Number(row.querySelector('[data-type="weight"]').value),
+          reps: Number(row.querySelector('[data-type="reps"]').value)
         }));
-
-        return {
-          name: exercise.name,
-          series
-        };
-      }
-    );
+      return { name: exercise.name, series };
+    }).filter(exercise => exercise.series.length);
 
     await addDoc(collection(db, "trainingLogs"), {
       studentId: currentUser.uid,
@@ -627,16 +639,13 @@ $("training-form").onsubmit = async event => {
     });
 
     selectedWorkout = null;
+    stopRestTimer();
     $("active-workout").hidden = true;
-
     await refreshData();
     showTab("history");
-
   } catch (error) {
-    console.error(error);
-
-    $("training-message").textContent =
-      "Não foi possível salvar. Confira sua conexão e as permissões.";
+    console.error("Erro ao salvar treino:", error);
+    $("training-message").textContent = "Não foi possível salvar. Verifique sua conexão e tente novamente.";
   } finally {
     saving = false;
     $("finish-workout").disabled = false;
@@ -742,6 +751,27 @@ onAuthStateChanged(auth, async user => {
   } catch (error) {
     console.error(error);
     accessError("Não foi possível verificar sua conta.");
+  }
+});
+
+
+$("student-password-reset").addEventListener("click", async () => {
+  const button = $("student-password-reset");
+  const feedback = $("student-profile-message");
+  if (!currentUser?.email) {
+    feedback.textContent = "Não há e-mail cadastrado nesta conta.";
+    return;
+  }
+  button.disabled = true;
+  feedback.textContent = "Enviando link...";
+  try {
+    await sendPasswordResetEmail(auth, currentUser.email);
+    feedback.textContent = "Enviamos um link de redefinição para seu e-mail.";
+  } catch (error) {
+    console.error(error);
+    feedback.textContent = "Não foi possível enviar o e-mail. Tente novamente.";
+  } finally {
+    button.disabled = false;
   }
 });
 
