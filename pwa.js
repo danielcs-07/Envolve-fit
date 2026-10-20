@@ -7,8 +7,11 @@ const showInstallButton = () => {
   button.className = "install-app-btn";
   button.type = "button";
   button.textContent = "📲 Instalar Evolve Fit";
-  const target = document.querySelector(".sidebar-bottom") ||
-    document.querySelector(".login-footer");
+  const mobileDashboard = window.matchMedia("(max-width: 900px)").matches
+    && document.querySelector(".dashboard-page");
+  const target = mobileDashboard
+    ? document.querySelector(".main-content")
+    : document.querySelector(".sidebar-bottom") || document.querySelector(".login-footer");
   if (!target) return;
   target.prepend(button);
   button.addEventListener("click", async () => {
