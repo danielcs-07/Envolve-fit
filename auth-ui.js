@@ -10,7 +10,9 @@ import {
 
 import {
   doc,
-  getDoc
+  getDoc,
+  setDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const form = document.getElementById("auth-form");
@@ -43,7 +45,7 @@ function updateForm() {
     : "Bem-vindo de volta!";
 
   formSubtitle.textContent = isRegistering
-    ? "Cadastre-se para começar sua evolução."
+    ? "Cadastre-se e aguarde a aprovação do treinador."
     : "Entre na sua conta para continuar evoluindo.";
 
   nameGroup.hidden = !isRegistering;
@@ -68,33 +70,24 @@ function updateForm() {
   showMessage("");
 }
 
-async function getAuthorizedProfile(user) {
-  const profileSnapshot = await getDoc(
-    doc(db, "users", user.uid)
-  );
-
-  if (!profileSnapshot.exists()) {
-    return null;
-  }
-
-  const profile = profileSnapshot.data();
-
-  if (
-    profile.active !== true ||
-    !["trainer", "student"].includes(profile.role)
-  ) {
-    return null;
-  }
-
-  return profile;
-}
-
 function redirectToDashboard(role) {
   const destination = role === "trainer"
     ? "treinador.html"
     : "aluno.html";
 
   window.location.replace(destination);
+}
+
+async function getProfile(user) {
+  const snapshot = await getDoc(
+    doc(db, "users", user.uid)
+  );
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return snapshot.data();
 }
 
 switchButton.addEventListener("click", () => {
@@ -104,6 +97,92 @@ switchButton.addEventListener("click", () => {
   updateForm();
 });
 
+async function registerStudent(email, password) {
+  const name = nameInput.value.trim();
+
+  if (name.length < 2 || name.length > 100) {
+    throw new Error("Digite seu nome completo.");
+  }
+
+  const credential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+  try {
+    await setDoc(doc(db, "users", credential.user.uid), {
+      name,
+      email: credential.user.email,
+      role: "student",
+      active: false,
+      createdAt: serverTimestamp()
+    });
+
+    await signOut(auth);
+
+    form.reset();
+    isRegistering = false;
+    updateForm();
+
+    showMessage(
+      "Conta criada com sucesso! Aguarde a aprovação do treinador para entrar.",
+      "success"
+    );
+
+  } catch (error) {
+    await signOut(auth).catch(() => {});
+
+    console.error("Erro ao salvar perfil:", error);
+
+    throw new Error(
+      "A conta foi criada, mas não foi possível finalizar seu perfil. Entre em contato com o treinador."
+    );
+  }
+}
+
+async function login(email, password) {
+  const credential = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+  const profile = await getProfile(credential.user);
+
+  if (!profile) {
+    await signOut(auth);
+
+    showMessage(
+      "Seu perfil ainda não foi configurado. Entre em contato com o treinador.",
+      "error"
+    );
+    return;
+  }
+
+  if (profile.active !== true) {
+    await signOut(auth);
+
+    showMessage(
+      "Seu cadastro está aguardando aprovação do treinador. 💙",
+      "error"
+    );
+    return;
+  }
+
+  if (!["trainer", "student"].includes(profile.role)) {
+    await signOut(auth);
+
+    showMessage(
+      "Sua conta não tem um perfil válido.",
+      "error"
+    );
+    return;
+  }
+
+  redirectToDashboard(profile.role);
+}
+
 form.addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -111,55 +190,22 @@ form.addEventListener("submit", async event => {
 
   isBusy = true;
   submitButton.disabled = true;
-  showMessage("Aguarde, estamos verificando...");
+
+  showMessage(
+    isRegistering
+      ? "Criando sua conta..."
+      : "Verificando seus dados..."
+  );
 
   try {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
 
     if (isRegistering) {
-      await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      await signOut(auth);
-
-      form.reset();
-      isRegistering = false;
-      updateForm();
-
-      showMessage(
-        "Conta criada! Aguarde a autorização do treinador.",
-        "success"
-      );
-
-      return;
+      await registerStudent(email, password);
+    } else {
+      await login(email, password);
     }
-
-    const credential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-
-    const profile = await getAuthorizedProfile(
-      credential.user
-    );
-
-    if (!profile) {
-      await signOut(auth);
-
-      showMessage(
-        "Sua conta ainda não está autorizada.",
-        "error"
-      );
-
-      return;
-    }
-
-    redirectToDashboard(profile.role);
 
   } catch (error) {
     console.error("Erro de autenticação:", error);
@@ -171,12 +217,13 @@ form.addEventListener("submit", async event => {
       "auth/weak-password": "A senha deve ter pelo menos 6 caracteres.",
       "auth/too-many-requests": "Muitas tentativas. Tente novamente mais tarde.",
       "auth/network-request-failed": "Verifique sua conexão com a internet.",
-      "permission-denied": "Você não tem permissão para acessar estes dados."
+      "permission-denied": "O Firebase não permitiu concluir o cadastro."
     };
 
     showMessage(
       errors[error.code] ||
-      "Não foi possível concluir a operação. Tente novamente.",
+      error.message ||
+      "Não foi possível concluir a operação.",
       "error"
     );
 
@@ -190,11 +237,15 @@ onAuthStateChanged(auth, async user => {
   if (!user || isBusy || isRegistering) return;
 
   try {
-    const profile = await getAuthorizedProfile(user);
+    const profile = await getProfile(user);
 
-    if (profile) {
+    if (
+      profile?.active === true &&
+      ["trainer", "student"].includes(profile.role)
+    ) {
       redirectToDashboard(profile.role);
     }
+
   } catch (error) {
     console.error("Erro ao verificar sessão:", error);
   }
