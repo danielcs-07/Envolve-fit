@@ -586,64 +586,81 @@ function drawBars(container, entries, unit) {
 }
 
 function renderProgress() {
-  const weights = [...measurements]
-    .filter(item => Number.isFinite(item.weight) && item.weight > 0)
-    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
-    .map(item => ({
-      value: item.weight,
-      label: item.createdAt?.toDate
-        ? item.createdAt.toDate().toLocaleDateString("pt-BR", {
-            day: "2-digit", month: "2-digit"
-          })
-        : "—"
-    }));
+  const studentId = $("trainer-progress-student").value;
+  const student = students.find(s => s.id === studentId);
+  const selectedLogs = logs.filter(log => log.studentId === studentId);
+  const selectedMeasurements = measurements
+    .filter(item => item.studentId === studentId)
+    .sort((a,b) => (timestampDate(a.createdAt)?.getTime() || 0)
+      - (timestampDate(b.createdAt)?.getTime() || 0));
 
-  drawBars($("trainer-weight-chart"), weights, "kg");
+  const select = $("trainer-progress-exercise");
+  const previous = select.value;
+  const names = uniqueExercises(selectedLogs);
+  select.replaceChildren(new Option("Selecione um exercício", ""));
+  names.forEach(name => select.add(new Option(name, name)));
+  if (names.includes(previous)) select.value = previous;
+  else if (names.length) select.value = names[0];
 
-  const strength = [];
+  const weightPoints = selectedMeasurements.map(item => {
+    const date = timestampDate(item.createdAt);
+    return {
+      value: Number(item.weight) || 0,
+      label: date ? date.toLocaleDateString("pt-BR", {
+        day: "2-digit", month: "2-digit"
+      }) : "—"
+    };
+  }).filter(item => item.value > 0);
 
-  [...logs].reverse().forEach(log => {
-    let maxWeight = 0;
+  drawBars($("trainer-weight-chart"), weightPoints, "kg");
+  drawBars($("trainer-strength-chart"),
+    bestSetProgress(selectedLogs, select.value), "kg");
 
-    (log.exercises || []).forEach(exercise => {
-      (exercise.series || []).forEach(series => {
-        maxWeight = Math.max(maxWeight, Number(series.weight) || 0);
-      });
-    });
-
-    if (maxWeight > 0) {
-      strength.push({
-        value: maxWeight,
-        label: log.createdAt?.toDate
-          ? log.createdAt.toDate().toLocaleDateString("pt-BR", {
-              day: "2-digit", month: "2-digit"
-            })
-          : "—"
-      });
-    }
+  const summary = $("trainer-progress-summary");
+  summary.replaceChildren();
+  const volume = selectedLogs.reduce((total, log) => total + trainingVolume(log), 0);
+  const cards = [
+    ["👤", "Aluno selecionado", student?.name || "Nenhum"],
+    ["✅", "Treinos concluídos", String(selectedLogs.length)],
+    ["📅", "Treinos em 7 dias", String(recentLogs(selectedLogs).length)],
+    ["🏋️", "Volume acumulado", `${volume.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg`]
+  ];
+  cards.forEach(([icon, label, value]) => {
+    const card = element("div", "mini-stat");
+    card.append(
+      element("span", "mini-stat-icon", icon),
+      element("span", "mini-stat-label", label),
+      element("strong", "", value)
+    );
+    summary.append(card);
   });
-
-  drawBars($("trainer-strength-chart"), strength, "kg");
 
   const container = $("measurement-list");
   container.replaceChildren();
 
-  [...measurements].reverse().forEach(item => {
-    const student = students.find(s => s.id === item.studentId);
-    const card = element("article", "panel-card");
+  if (!studentId) {
+    container.append(emptyMessage("Selecione um aluno para ver a evolução individual."));
+  } else if (!selectedMeasurements.length) {
+    container.append(emptyMessage("Este aluno ainda não registrou medidas."));
+  }
 
+  [...selectedMeasurements].reverse().forEach(item => {
+    const card = element("article", "panel-card");
     card.append(
       element("h3", "", student?.name || "Aluno"),
-      element(
-        "p",
-        "muted",
-        `${item.weight} kg • ${item.height || "—"} cm • ${dateLabel(item.createdAt)}`
-      )
+      element("p", "muted",
+        `${item.weight} kg · ${item.height || "—"} cm · ${dateLabel(item.createdAt)}`)
     );
-
     container.append(card);
   });
 }
+$("trainer-progress-student").addEventListener("change", renderProgress);
+$("trainer-progress-exercise").addEventListener("change", () => {
+  const selectedLogs = logs.filter(log =>
+    log.studentId === $("trainer-progress-student").value);
+  drawBars($("trainer-strength-chart"),
+    bestSetProgress(selectedLogs, $("trainer-progress-exercise").value), "kg");
+});
 
 function renderDashboard() {
   $("stat-students").textContent = students.length;
@@ -651,6 +668,19 @@ function renderDashboard() {
   $("stat-published").textContent =
     workouts.filter(w => w.status === "published").length;
   $("stat-logs").textContent = logs.length;
+  const weekly = $("trainer-weekly-stats");
+  weekly.replaceChildren();
+  const weekLogs = recentLogs(logs);
+  [
+    ["📅", "Treinos desta semana", String(weekLogs.length)],
+    ["💪", "Alunos que treinaram", String(new Set(weekLogs.map(log => log.studentId)).size)],
+    ["⏱️", "Último registro", logs.length ? dateLabel(logs[0].createdAt) : "Ainda não há"]
+  ].forEach(([icon, label, value]) => {
+    const card = element("div", "mini-stat");
+    card.append(element("span", "mini-stat-icon", icon),
+      element("span", "mini-stat-label", label), element("strong", "", value));
+    weekly.append(card);
+  });
 
   const overview = $("overview-progress");
   overview.replaceChildren();
@@ -757,6 +787,65 @@ onAuthStateChanged(auth, async user => {
   } catch (error) {
     console.error(error);
     accessError("Não foi possível verificar sua conta.");
+  }
+});
+
+
+function downloadCsv(filename, rows) {
+  const escapeCell = value => {
+    let text = String(value ?? "");
+    if (/^[\s]*[=+@-]/.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  const csv = "\uFEFF" + rows.map(row => row.map(escapeCell).join(";")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$("trainer-export-csv").addEventListener("click", () => {
+  const studentId = $("trainer-history-student").value;
+  const text = $("trainer-history-search").value.trim().toLocaleLowerCase("pt-BR");
+  const selected = logs.filter(log =>
+    (!studentId || log.studentId === studentId) &&
+    (!text || String(log.workoutName || "").toLocaleLowerCase("pt-BR").includes(text)));
+  const rows = [["Aluno", "Treino", "Data", "Exercício", "Série", "Carga (kg)", "Repetições"]];
+  selected.forEach(log => {
+    const student = students.find(item => item.id === log.studentId);
+    (log.exercises || []).forEach(exercise =>
+      (exercise.series || []).forEach((set, index) => {
+        rows.push([student?.name || "Aluno", log.workoutName || "",
+          dateLabel(log.createdAt), exercise.name, index + 1, set.weight, set.reps]);
+      })
+    );
+  });
+  if (rows.length < 2) {
+    alert("Nenhum registro com séries para exportar.");
+    return;
+  }
+  downloadCsv("evolve-fit-historico.csv", rows);
+});
+
+$("trainer-password-reset").addEventListener("click", async () => {
+  const button = $("trainer-password-reset");
+  const feedback = $("trainer-profile-message");
+  if (!currentUser?.email) {
+    feedback.textContent = "Não há e-mail cadastrado.";
+    return;
+  }
+  button.disabled = true;
+  feedback.textContent = "Enviando link...";
+  try {
+    await sendPasswordResetEmail(auth, currentUser.email);
+    feedback.textContent = "Link de redefinição enviado para o seu e-mail.";
+  } catch (error) {
+    console.error(error);
+    feedback.textContent = "Não foi possível enviar o e-mail. Tente novamente.";
+  } finally {
+    button.disabled = false;
   }
 });
 
