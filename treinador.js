@@ -1,3 +1,5 @@
+alert("O JavaScript do painel carregou!");
+
 import { auth, db } from "./firebase-config.js";
 
 import {
