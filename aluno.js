@@ -274,7 +274,6 @@ function startWorkout(workout) {
       weight.min = "0";
       weight.max = "1000";
       weight.step = "0.5";
-      weight.required = true;
       weight.placeholder = "0";
       weight.dataset.type = "weight";
       weight.inputMode = "decimal";
@@ -292,7 +291,6 @@ function startWorkout(workout) {
       reps.min = "0";
       reps.max = "1000";
       reps.step = "1";
-      reps.required = true;
       reps.placeholder = "12";
       reps.dataset.type = "reps";
       reps.inputMode = "numeric";
