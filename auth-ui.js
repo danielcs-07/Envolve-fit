@@ -1,44 +1,151 @@
-const authForm = document.getElementById("auth-form");
-const formTitle = document.getElementById("form-title");
-const formSubtitle = document.getElementById("form-subtitle");
+
+import { auth, db } from "./firebase-config.js";
+
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+const form = document.getElementById("auth-form");
+const title = document.getElementById("form-title");
+const subtitle = document.getElementById("form-subtitle");
 const nameGroup = document.getElementById("name-group");
 const nameInput = document.getElementById("name");
+const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
+const message = document.getElementById("auth-message");
 const submitBtn = document.getElementById("submit-btn");
-const switchBtn = document.getElementById("switch-btn");
 const switchText = document.getElementById("switch-text");
-const authMessage = document.getElementById("auth-message");
+const switchBtn = document.getElementById("switch-btn");
 
 let isRegistering = false;
 
+function showMessage(text) {
+  message.textContent = text;
+}
+
+function updateForm() {
+  title.textContent = isRegistering ? "Criar conta" : "Entrar";
+  subtitle.textContent = isRegistering
+    ? "Crie sua conta para começar."
+    : "Entre para acessar seus treinos.";
+
+  nameGroup.hidden = !isRegistering;
+  nameInput.required = isRegistering;
+
+  submitBtn.textContent = isRegistering
+    ? "Criar conta"
+    : "Entrar";
+
+  switchText.textContent = isRegistering
+    ? "Já tem uma conta?"
+    : "Ainda não tem uma conta?";
+
+  switchBtn.textContent = isRegistering
+    ? "Entrar"
+    : "Cadastre-se";
+
+  showMessage("");
+}
+
 switchBtn.addEventListener("click", () => {
-    isRegistering = !isRegistering;
+  isRegistering = !isRegistering;
+  updateForm();
+});
 
-    authMessage.textContent = "";
-    authForm.reset();
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-    nameGroup.hidden = !isRegistering;
-    nameInput.required = isRegistering;
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
+  submitBtn.disabled = true;
+  showMessage("Aguarde...");
+
+  try {
     if (isRegistering) {
-        formTitle.textContent = "Crie sua conta";
-        formSubtitle.textContent = "Comece sua evolução com o Evolve Fit.";
-        submitBtn.textContent = "Criar minha conta";
-        switchText.textContent = "Já tem uma conta?";
-        switchBtn.textContent = "Entrar";
-        passwordInput.autocomplete = "new-password";
-    } else {
-        formTitle.textContent = "Bem-vindo de volta!";
-        formSubtitle.textContent = "Entre na sua conta para continuar.";
-        submitBtn.textContent = "Entrar na minha conta";
-        switchText.textContent = "Ainda não tem uma conta?";
-        switchBtn.textContent = "Criar conta";
-        passwordInput.autocomplete = "current-password";
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      await signOut(auth);
+
+      showMessage(
+        "Conta criada! Aguarde a liberação do treinador."
+      );
+
+      return;
     }
+
+    const credential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    const profileRef = doc(
+      db,
+      "users",
+      credential.user.uid
+    );
+
+    const profileSnap = await getDoc(profileRef);
+
+    if (!profileSnap.exists()) {
+      await signOut(auth);
+      showMessage(
+        "Sua conta ainda não foi liberada."
+      );
+      return;
+    }
+
+    const profile = profileSnap.data();
+
+    if (profile.active !== true) {
+      await signOut(auth);
+      showMessage("Sua conta está desativada.");
+      return;
+    }
+
+    if (profile.role === "trainer") {
+      showMessage("Login realizado! Bem-vindo, treinador.");
+    } else if (profile.role === "student") {
+      showMessage("Login realizado! Bem-vindo, aluno.");
+    } else {
+      await signOut(auth);
+      showMessage("Perfil não autorizado.");
+    }
+  } catch (error) {
+    console.error(error);
+
+    if (
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/wrong-password" ||
+      error.code === "auth/user-not-found"
+    ) {
+      showMessage("E-mail ou senha incorretos.");
+    } else if (error.code === "auth/email-already-in-use") {
+      showMessage("Este e-mail já está cadastrado.");
+    } else if (error.code === "auth/weak-password") {
+      showMessage("Use uma senha com pelo menos 6 caracteres.");
+    } else if (error.code === "auth/invalid-email") {
+      showMessage("Digite um e-mail válido.");
+    } else {
+      showMessage(
+        "Não foi possível concluir. Tente novamente."
+      );
+    }
+  } finally {
+    submitBtn.disabled = false;
+  }
 });
 
-authForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    authMessage.textContent = "Estamos preparando o acesso seguro ao Evolve Fit.";
-});
+updateForm();
