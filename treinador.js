@@ -3,7 +3,8 @@ import { auth, db } from "./firebase-config.js";
 
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
 import {
@@ -16,6 +17,11 @@ import {
   deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+import {
+  WEEK_DAYS, normalizeDay, timestampDate, recentLogs,
+  numberOfSeries, trainingVolume, uniqueExercises, bestSetProgress
+} from "./fitness-utils.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -359,91 +365,136 @@ function renderWorkouts() {
   const container = $("workout-list");
   container.replaceChildren();
 
-  if (!workouts.length) {
-    container.append(emptyMessage("Nenhum treino criado ainda."));
+  const search = $("trainer-workout-search").value.trim().toLocaleLowerCase("pt-BR");
+  const status = $("trainer-workout-status").value;
+  const studentId = $("trainer-workout-student").value;
+  const items = workouts.filter(workout => {
+    const haystack = [workout.name, workout.description,
+      ...(workout.exercises || []).map(ex => ex.name)].join(" ").toLocaleLowerCase("pt-BR");
+    return (!search || haystack.includes(search)) &&
+      (!status || workout.status === status) &&
+      (!studentId || workout.studentId === studentId);
+  });
+
+  if (!items.length) {
+    container.append(emptyMessage(workouts.length
+      ? "Nenhuma ficha corresponde aos filtros."
+      : "Nenhum treino criado ainda."));
     return;
   }
 
-  workouts.forEach(workout => {
+  const dayName = day => WEEK_DAYS.find(d => d.key === normalizeDay(day))?.label || "Dia livre";
+  items.forEach(workout => {
     const card = element("article", "panel-card workout-card");
     const heading = element("div", "card-heading");
     const left = element("div");
     const title = element("h3", "", workout.name);
-    const student = students.find(s => s.id === workout.studentId);
+    const student = students.find(item => item.id === workout.studentId);
 
-    left.append(
-      title,
-      element("p", "muted",
-        student ? `Aluno: ${student.name}` : "Aluno não selecionado"
-      )
-    );
+    left.append(title, element("p", "muted",
+      student ? `Aluno: ${student.name}` : "Aluno não selecionado"));
 
-    const badge = element(
-      "span",
-      workout.status === "published" ? "status-published" : "status-draft",
-      workout.status === "published" ? "Publicado" : "Rascunho"
-    );
-
+    const badge = element("span", workout.status === "published"
+      ? "status-published" : "status-draft", workout.status === "published" ? "Publicado" : "Rascunho");
     heading.append(left, badge);
 
-    const summary = element(
-      "p",
-      "muted",
-      `${workout.exercises.length} exercícios • ${workout.day || "Sem dia definido"}`
-    );
+    const summary = element("p", "muted",
+      `${(workout.exercises || []).length} exercícios · ${numberOfSeries(workout)} séries · ${dayName(workout.day)}`);
 
     const actions = element("div", "form-actions");
     const edit = element("button", "secondary-btn", "✏️ Editar");
+    const duplicate = element("button", "outline-btn", "⧉ Duplicar");
     const remove = element("button", "danger-outline", "🗑️ Excluir");
 
+    edit.type = "button";
+    duplicate.type = "button";
+    remove.type = "button";
     edit.onclick = () => editWorkout(workout);
+    duplicate.onclick = () => {
+      editWorkout(workout);
+      $("editing-id").value = "";
+      $("workout-name").value = `${workout.name} (cópia)`;
+      $("form-message").textContent = "Cópia pronta para editar. Salve como rascunho ou publique para o aluno.";
+    };
     remove.onclick = () => removeWorkout(workout);
 
-    actions.append(edit, remove);
+    actions.append(edit, duplicate, remove);
     card.append(heading, summary, actions);
     container.append(card);
   });
 }
+$("trainer-workout-search").addEventListener("input", renderWorkouts);
+$("trainer-workout-status").addEventListener("change", renderWorkouts);
+$("trainer-workout-student").addEventListener("change", renderWorkouts);
 
 function renderStudents() {
   const container = $("student-list");
   const select = $("workout-student");
   const selected = select.value;
+  const search = $("trainer-student-search").value.trim().toLocaleLowerCase("pt-BR");
+
+  const selectConfigs = [
+    [select, "Selecione um aluno", true],
+    [$("trainer-workout-student"), "Todos os alunos", false],
+    [$("trainer-history-student"), "Todos os alunos", false],
+    [$("trainer-progress-student"), "Selecione um aluno", false]
+  ];
+  selectConfigs.forEach(([node, placeholder, defaultFirst]) => {
+    const previous = node.value;
+    node.replaceChildren(new Option(placeholder, ""));
+    students.forEach(student => node.add(new Option(student.name, student.id)));
+    if (students.some(student => student.id === previous)) {
+      node.value = previous;
+    } else if (!defaultFirst && node.id === "trainer-progress-student" && students.length) {
+      node.value = students[0].id;
+    }
+  });
+
+  if (students.some(student => student.id === selected)) select.value = selected;
 
   container.replaceChildren();
-  select.replaceChildren(new Option("Selecione um aluno", ""));
+  const items = students.filter(student =>
+    [student.name, student.email].join(" ").toLocaleLowerCase("pt-BR").includes(search));
 
-  students.forEach(student => {
-    select.add(new Option(student.name, student.id));
+  $("trainer-student-count").textContent =
+    `${items.length} de ${students.length} aluno${students.length === 1 ? "" : "s"}`;
 
+  items.forEach(student => {
     const card = element("article", "student-row");
     const info = element("div");
     info.append(
-      element("strong", "", student.name),
-      element("p", "muted", "Aluno ativo")
+      element("strong", "", student.name || "Aluno"),
+      element("p", "muted", student.email || "Conta ativa")
     );
 
     const button = element("button", "outline-btn", "Criar treino");
+    button.type = "button";
     button.onclick = () => {
       clearForm();
       $("workout-student").value = student.id;
       showTab("create");
     };
-
-    card.append(info, button);
+    const history = element("button", "secondary-btn", "Histórico");
+    history.type = "button";
+    history.onclick = () => {
+      $("trainer-history-student").value = student.id;
+      renderLogs();
+      showTab("history");
+    };
+    const actions = element("div", "form-actions compact-actions");
+    actions.append(button, history);
+    card.append(info, actions);
     container.append(card);
   });
 
-  if (students.some(student => student.id === selected)) {
-    select.value = selected;
-  }
-
-  if (!students.length) {
-    container.append(
-      emptyMessage("Nenhum aluno autorizado ainda.")
-    );
+  if (!items.length) {
+    container.append(emptyMessage(students.length
+      ? "Nenhum aluno encontrado."
+      : "Nenhum aluno autorizado ainda."));
   }
 }
+
+$("trainer-student-search").addEventListener("input", renderStudents);
 
 function dateLabel(timestamp) {
   if (!timestamp?.toDate) return "Data não disponível";
@@ -453,56 +504,59 @@ function dateLabel(timestamp) {
 function renderLogs() {
   const container = $("log-list");
   const recent = $("recent-activity");
-
   container.replaceChildren();
   recent.replaceChildren();
 
-  if (!logs.length) {
-    container.append(emptyMessage("Nenhum treino registrado."));
-    recent.append(emptyMessage("Aguardando atividades dos alunos."));
-    return;
+  const studentId = $("trainer-history-student").value;
+  const search = $("trainer-history-search").value.trim().toLocaleLowerCase("pt-BR");
+  const items = logs.filter(log =>
+    (!studentId || log.studentId === studentId)
+      && (!search || String(log.workoutName || "").toLocaleLowerCase("pt-BR").includes(search)));
+
+  if (!items.length) {
+    container.append(emptyMessage(logs.length
+      ? "Nenhum treino encontrado com esses filtros."
+      : "Nenhum treino registrado."));
   }
 
-  logs.forEach((log, index) => {
+  items.forEach(log => {
     const student = students.find(s => s.id === log.studentId);
-    const card = element("article", "panel-card");
-    card.append(
+    const card = element("article", "panel-card history-card");
+    const heading = element("div", "card-heading");
+    const content = element("div");
+    content.append(
       element("h3", "", log.workoutName || "Treino"),
-      element("p", "muted",
-        `${student?.name || "Aluno"} • ${dateLabel(log.createdAt)}`
-      )
+      element("p", "muted", `${student?.name || "Aluno"} · ${dateLabel(log.createdAt)}`)
     );
+    const volume = element("span", "volume-pill",
+      `${trainingVolume(log).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg de volume`);
+    heading.append(content, volume);
+    card.append(heading);
 
     (log.exercises || []).forEach(exercise => {
       const block = element("div", "log-exercise");
       block.append(element("strong", "", exercise.name));
-
       (exercise.series || []).forEach((series, i) => {
-        block.append(
-          element(
-            "p",
-            "muted",
-            `Série ${i + 1}: ${series.weight} kg • ${series.reps} repetições`
-          )
-        );
+        block.append(element("p", "muted",
+          `Série ${i + 1}: ${series.weight} kg · ${series.reps} repetições`));
       });
-
       card.append(block);
     });
-
     container.append(card);
-
-    if (index < 3) {
-      recent.append(
-        element(
-          "p",
-          "activity-item",
-          `${student?.name || "Aluno"} concluiu ${log.workoutName || "um treino"}`
-        )
-      );
-    }
   });
+
+  if (!logs.length) {
+    recent.append(emptyMessage("Aguardando atividades dos alunos."));
+  } else {
+    logs.slice(0, 4).forEach(log => {
+      const student = students.find(s => s.id === log.studentId);
+      recent.append(element("p", "activity-item",
+        `${student?.name || "Aluno"} · ${log.workoutName || "Treino"} · ${dateLabel(log.createdAt)}`));
+    });
+  }
 }
+$("trainer-history-student").addEventListener("change", renderLogs);
+$("trainer-history-search").addEventListener("input", renderLogs);
 
 function drawBars(container, entries, unit) {
   container.replaceChildren();
