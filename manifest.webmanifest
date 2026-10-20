@@ -1,0 +1,19 @@
+{
+  "name": "Evolve Fit — Treinos e evolução",
+  "short_name": "Evolve Fit",
+  "description": "Acompanhe treinos, cargas e evolução com seu treinador.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f1",
+  "theme_color": "#14231e",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
