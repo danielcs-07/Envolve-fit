@@ -15,13 +15,16 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
   WEEK_DAYS, normalizeDay, timestampDate, recentLogs,
   numberOfSeries, trainingVolume, uniqueExercises, bestSetProgress
 } from "./fitness-utils.mjs";
+
+import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -731,6 +734,28 @@ async function refreshData() {
   renderDashboard();
 }
 
+
+async function ensureWeeklyDrafts() {
+  const refs = WEEKLY_DRAFTS.map(workout =>
+    doc(db, "workouts", `${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${workout.day}`));
+  const existing = await Promise.all(refs.map(ref => getDoc(ref)));
+  const batch = writeBatch(db);
+  let added = 0;
+  WEEKLY_DRAFTS.forEach((workout, index) => {
+    if (existing[index].exists()) return;
+    batch.set(refs[index], {
+      ...workout,
+      trainerId: currentUser.uid,
+      studentId: "",
+      status: "draft",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    added++;
+  });
+  if (added) await batch.commit();
+}
+
 function accessError(message) {
   $("app").hidden = true;
   $("loading").replaceChildren();
@@ -778,6 +803,12 @@ onAuthStateChanged(auth, async user => {
     clearForm();
 
     try {
+      try {
+        await ensureWeeklyDrafts();
+      } catch (error) {
+        console.error("Erro ao adicionar rascunhos semanais:", error);
+        alert("Não foi possível salvar os seis rascunhos semanais. Confira sua conexão e as permissões do Firestore e entre novamente para tentar.");
+      }
       await refreshData();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
