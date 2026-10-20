@@ -8,6 +8,9 @@
   <title>Painel do Treinador | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
+  <link rel="stylesheet" href="pro-features.css?v=1">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
 <body class="dashboard-page">
 
@@ -118,6 +121,8 @@
               <small>Registros recebidos</small>
             </article>
           </div>
+
+          <div id="trainer-weekly-stats" class="mini-stats-grid"></div>
 
           <div class="panel-grid">
             <article class="panel-card">
@@ -234,6 +239,21 @@
               ➕ Novo treino
             </button>
           </div>
+          <div class="feature-toolbar">
+            <label class="filter-field">Buscar ficha
+              <input id="trainer-workout-search" type="search" placeholder="Nome ou exercício">
+            </label>
+            <label class="filter-field">Situação
+              <select id="trainer-workout-status">
+                <option value="">Todos</option>
+                <option value="published">Publicados</option>
+                <option value="draft">Rascunhos</option>
+              </select>
+            </label>
+            <label class="filter-field">Aluno
+              <select id="trainer-workout-student"><option value="">Todos os alunos</option></select>
+            </label>
+          </div>
           <div id="workout-list" class="cards-list"></div>
         </section>
 
@@ -250,6 +270,12 @@
               Seus alunos aprovados aparecem aqui. Novos cadastros ficam
               na seção de solicitações pendentes, acima desta lista.
             </p>
+            <div class="feature-toolbar">
+              <label class="filter-field">Buscar aluno
+                <input id="trainer-student-search" type="search" placeholder="Nome ou e-mail">
+              </label>
+              <span id="trainer-student-count" class="toolbar-stat"></span>
+            </div>
             <div id="student-list" class="cards-list"></div>
           </article>
         </section>
@@ -260,6 +286,15 @@
               <h2>📋 Histórico de treinos</h2>
               <p>Veja os exercícios, as cargas e as repetições realizadas.</p>
             </div>
+          </div>
+          <div class="feature-toolbar">
+            <label class="filter-field">Aluno
+              <select id="trainer-history-student"><option value="">Todos os alunos</option></select>
+            </label>
+            <label class="filter-field">Buscar treino
+              <input id="trainer-history-search" type="search" placeholder="Nome do treino">
+            </label>
+            <button type="button" id="trainer-export-csv" class="outline-btn">⬇ Exportar histórico CSV</button>
           </div>
           <div id="log-list" class="cards-list"></div>
         </section>
@@ -272,13 +307,22 @@
             </div>
           </div>
 
+          <div class="feature-toolbar">
+            <label class="filter-field">Visualizar evolução do aluno
+              <select id="trainer-progress-student"><option value="">Selecione um aluno</option></select>
+            </label>
+            <label class="filter-field">Exercício
+              <select id="trainer-progress-exercise"><option value="">Escolha um exercício</option></select>
+            </label>
+          </div>
+          <div id="trainer-progress-summary" class="mini-stats-grid"></div>
           <div class="panel-grid">
             <article class="panel-card">
               <h3>⚖️ Peso corporal</h3>
               <div id="trainer-weight-chart" class="chart-area"></div>
             </article>
             <article class="panel-card">
-              <h3>💪 Carga máxima registrada</h3>
+              <h3>💪 Evolução de carga por exercício</h3>
               <div id="trainer-strength-chart" class="chart-area"></div>
             </article>
           </div>
@@ -294,6 +338,8 @@
             <h3 id="profile-name">Treinador</h3>
             <p id="profile-email"></p>
             <span class="role-pill">Conta de treinador</span>
+            <button type="button" id="trainer-password-reset" class="outline-btn profile-action">Enviar link para redefinir senha</button>
+            <p class="status-message" id="trainer-profile-message" role="status"></p>
           </article>
         </section>
       </main>
@@ -305,6 +351,7 @@
   </div>
 
   <script type="module" src="treinador.js"></script>
+  <script defer src="pwa.js"></script>
   <script type="module" src="aprovacao.js"></script>
 </body>
 </html>

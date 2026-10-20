@@ -5,7 +5,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
 import {
@@ -248,6 +249,31 @@ onAuthStateChanged(auth, async user => {
 
   } catch (error) {
     console.error("Erro ao verificar sessão:", error);
+  }
+});
+
+
+document.getElementById("forgot-password").addEventListener("click", async () => {
+  if (isBusy) return;
+  const email = emailInput.value.trim();
+  if (!email || !emailInput.checkValidity()) {
+    showMessage("Digite seu e-mail no campo acima para receber o link de redefinição.", "error");
+    emailInput.focus();
+    return;
+  }
+  const button = document.getElementById("forgot-password");
+  button.disabled = true;
+  showMessage("Solicitando link de redefinição...");
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showMessage("Se houver uma conta com esse e-mail, você receberá um link para redefinir a senha.", "success");
+  } catch (error) {
+    console.error(error);
+    showMessage(error.code === "auth/too-many-requests"
+      ? "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente."
+      : "Não foi possível enviar o link. Confira seu e-mail e tente novamente.", "error");
+  } finally {
+    button.disabled = false;
   }
 });
 

@@ -2,7 +2,8 @@ import { auth, db } from "./firebase-config.js";
 
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
 import {
@@ -16,6 +17,11 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
+import {
+  WEEK_DAYS, normalizeDay, localDay, weekDates, timestampDate,
+  recentLogs, numberOfSeries, trainingVolume, bestSetProgress, uniqueExercises
+} from "./fitness-utils.mjs";
+
 const $ = id => document.getElementById(id);
 
 let currentUser = null;
@@ -24,6 +30,8 @@ let logs = [];
 let measurements = [];
 let selectedWorkout = null;
 let saving = false;
+let restInterval = null;
+let restRemaining = 0;
 
 const tabTitles = {
   dashboard: "Início",
@@ -49,7 +57,7 @@ function showTab(tab) {
     button.classList.toggle("active", button.dataset.tab === tab);
   });
 
-  $("page-title").textContent = tabTitles[tab];
+  $("page-title").textContent = tabTitles[tab] || "Evolve Fit";
   window.scrollTo(0, 0);
 }
 
@@ -91,8 +99,115 @@ function dateText(timestamp) {
     : "Data indisponível";
 }
 
+function ptNumber(value, decimals = 0) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    maximumFractionDigits: decimals
+  });
+}
+
+function updateSetProgress() {
+  const rows = [...document.querySelectorAll("#training-exercises .series-row")];
+  const checked = rows.filter(row => row.querySelector('[data-type="done"]')?.checked).length;
+  const progress = $("workout-progress");
+  progress.max = Math.max(1, rows.length);
+  progress.value = checked;
+  $("workout-progress-text").textContent = `${checked} de ${rows.length} séries`;
+  rows.forEach(row => {
+    row.classList.toggle("set-done", Boolean(row.querySelector('[data-type="done"]')?.checked));
+  });
+}
+
+function stopRestTimer(reset = true) {
+  if (restInterval != null) clearInterval(restInterval);
+  restInterval = null;
+  if (reset) {
+    restRemaining = 0;
+    $("rest-time").textContent = "Pronto para começar";
+  }
+}
+
+function startRestTimer(seconds) {
+  stopRestTimer(false);
+  restRemaining = Math.max(0, Number(seconds) || 0);
+  const update = () => {
+    const minutes = String(Math.floor(restRemaining / 60)).padStart(2, "0");
+    const secs = String(restRemaining % 60).padStart(2, "0");
+    $("rest-time").textContent = restRemaining > 0
+      ? `${minutes}:${secs} restantes`
+      : "Descanso concluído ✓";
+  };
+  update();
+  if (restRemaining === 0) return;
+  restInterval = setInterval(() => {
+    restRemaining = Math.max(0, restRemaining - 1);
+    update();
+    if (restRemaining === 0) stopRestTimer(false);
+  }, 1000);
+}
+
+$("rest-stop").onclick = () => stopRestTimer();
+
+function lastWorkoutLog(workout) {
+  return logs.find(log => log.workoutId === workout.id);
+}
+
+function weekSchedule() {
+  const strip = $("week-strip");
+  strip.replaceChildren();
+  weekDates().forEach(day => {
+    const dayWorkouts = workouts.filter(w => normalizeDay(w.day) === day.key);
+    const button = make("button", `week-day${day.today ? " is-today" : ""}`);
+    button.type = "button";
+    const shortName = make("span", "week-day-name", day.short);
+    const date = make("strong", "week-date", String(day.date.getDate()).padStart(2, "0"));
+    const indicator = make("span", "week-count", dayWorkouts.length
+      ? `${dayWorkouts.length} treino${dayWorkouts.length > 1 ? "s" : ""}`
+      : "Descanso");
+    button.append(shortName, date, indicator);
+    button.setAttribute("aria-label", `${day.label}: ${indicator.textContent}`);
+    button.onclick = () => {
+      $("student-day-filter").value = day.key;
+      renderWorkouts();
+      showTab("workouts");
+    };
+    strip.append(button);
+  });
+
+  const todayWorkouts = workouts.filter(w => normalizeDay(w.day) === localDay());
+  const flexible = workouts.filter(w => !normalizeDay(w.day));
+  const feature = $("student-today-feature");
+  feature.replaceChildren();
+
+  if (todayWorkouts.length) {
+    const wrapper = make("div", "today-inner");
+    const content = make("div");
+    content.append(make("span", "today-kicker", "⚡ PROGRAMADO PARA HOJE"));
+    content.append(make("h3", "", todayWorkouts.map(w => w.name).join(" · ")));
+    content.append(make("p", "", "Seu treino está pronto. Registre as séries quando terminar."));
+    const go = make("button", "primary-btn", "Começar meu treino ↗");
+    go.type = "button";
+    go.onclick = () => startWorkout(todayWorkouts[0]);
+    wrapper.append(content, go);
+    feature.append(wrapper);
+  } else {
+    const wrapper = make("div", "today-inner");
+    const content = make("div");
+    content.append(make("span", "today-kicker", "🌿 SUA ROTINA"));
+    content.append(make("h3", "", "Sem treino programado para hoje"));
+    content.append(make("p", "", flexible.length
+      ? "Você também tem treinos sem dia fixo para realizar quando combinado com seu treinador."
+      : "Aproveite para recuperar as energias e seguir seu planejamento."));
+    const open = make("button", "outline-btn", "Ver minhas fichas");
+    open.type = "button";
+    open.onclick = () => showTab("workouts");
+    wrapper.append(content, open);
+    feature.append(wrapper);
+  }
+}
+
 function startWorkout(workout) {
   selectedWorkout = workout;
+  stopRestTimer();
 
   $("active-workout").hidden = false;
   $("active-workout-name").textContent = workout.name;
@@ -102,7 +217,8 @@ function startWorkout(workout) {
   const container = $("training-exercises");
   container.replaceChildren();
 
-  workout.exercises.forEach((exercise, exerciseIndex) => {
+  const previousLog = lastWorkoutLog(workout);
+  (workout.exercises || []).forEach((exercise, exerciseIndex) => {
     const card = make("article", "training-exercise");
 
     card.append(
@@ -137,6 +253,12 @@ function startWorkout(workout) {
       card.append(link);
     }
 
+    const rest = make("button", "outline-btn rest-action",
+      `⏱️ Iniciar descanso de ${Number(exercise.rest) || 60}s`);
+    rest.type = "button";
+    rest.onclick = () => startRestTimer(Number(exercise.rest) || 60);
+    card.append(rest);
+
     const sets = make("div", "series-grid");
     sets.dataset.exerciseIndex = exerciseIndex;
 
@@ -152,9 +274,13 @@ function startWorkout(workout) {
       weight.min = "0";
       weight.max = "1000";
       weight.step = "0.5";
-      weight.required = true;
       weight.placeholder = "0";
       weight.dataset.type = "weight";
+      weight.inputMode = "decimal";
+      const previous = (previousLog?.exercises || [])
+        .find(ex => String(ex.name).trim().toLowerCase() === String(exercise.name).trim().toLowerCase());
+      const oldSeries = previous?.series?.[i];
+      if (oldSeries?.weight != null) weight.value = oldSeries.weight;
       weightLabel.append(weight);
 
       const repsLabel = make("label", "series-input");
@@ -165,12 +291,20 @@ function startWorkout(workout) {
       reps.min = "0";
       reps.max = "1000";
       reps.step = "1";
-      reps.required = true;
       reps.placeholder = "12";
       reps.dataset.type = "reps";
+      reps.inputMode = "numeric";
+      if (oldSeries?.reps != null) reps.value = oldSeries.reps;
       repsLabel.append(reps);
 
-      row.append(weightLabel, repsLabel);
+      const checkLabel = make("label", "set-check");
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.dataset.type = "done";
+      check.setAttribute("aria-label", `Concluir série ${i + 1} de ${exercise.name}`);
+      check.addEventListener("change", updateSetProgress);
+      checkLabel.append(check, make("span", "", "Feita"));
+      row.append(weightLabel, repsLabel, checkLabel);
       sets.append(row);
     }
 
@@ -179,102 +313,130 @@ function startWorkout(workout) {
   });
 
   $("training-message").textContent = "";
+  updateSetProgress();
   showTab("workouts");
   $("active-workout").scrollIntoView({ behavior: "smooth" });
 }
 
 $("close-workout").onclick = () => {
   selectedWorkout = null;
+  stopRestTimer();
   $("active-workout").hidden = true;
 };
 
 function renderWorkouts() {
   const list = $("student-workout-list");
   const upcoming = $("upcoming-workouts");
-
   list.replaceChildren();
   upcoming.replaceChildren();
 
-  if (!workouts.length) {
-    const empty = make(
-      "p",
-      "empty-text",
-      "Seu treinador ainda não publicou nenhum treino para você."
-    );
+  const text = $("student-workout-search").value.trim().toLocaleLowerCase("pt-BR");
+  const day = $("student-day-filter").value;
 
-    list.append(empty);
-    upcoming.append(empty.cloneNode(true));
-    return;
+  const filtered = workouts.filter(workout => {
+    const haystack = [workout.name, workout.description,
+      ...(workout.exercises || []).map(ex => ex.name)]
+      .join(" ").toLocaleLowerCase("pt-BR");
+    return (!text || haystack.includes(text))
+      && (!day || normalizeDay(workout.day) === day);
+  });
+
+  if (!filtered.length) {
+    list.append(make("p", "empty-text", workouts.length
+      ? "Nenhum treino corresponde à sua busca."
+      : "Seu treinador ainda não publicou nenhum treino para você."));
   }
 
-  workouts.forEach(workout => {
+  const dayName = day => WEEK_DAYS.find(d => d.key === normalizeDay(day))?.label || "Dia livre";
+  filtered.forEach(workout => {
     const card = make("article", "panel-card workout-card");
-
+    const label = make("span", "workout-day-tag", dayName(workout.day));
+    card.append(label);
     card.append(
       make("h3", "", workout.name),
       make("p", "muted",
-        `${workout.exercises.length} exercícios • ${workout.day || "Dia livre"}`
-      )
+        `${(workout.exercises || []).length} exercícios · ${numberOfSeries(workout)} séries`)
     );
 
-    if (workout.description) {
-      card.append(make("p", "", workout.description));
+    if (workout.description) card.append(make("p", "workout-instructions", workout.description));
+
+    const last = lastWorkoutLog(workout);
+    if (last) {
+      const date = timestampDate(last.createdAt);
+      if (date) card.append(make("p", "last-session",
+        `✓ Último registro: ${date.toLocaleDateString("pt-BR")}`));
     }
 
-    const button = make("button", "primary-btn", "▶️ Iniciar treino");
+    const button = make("button", "primary-btn", "▶ Iniciar treino");
+    button.type = "button";
     button.onclick = () => startWorkout(workout);
     card.append(button);
     list.append(card);
-
-    const small = make("div", "student-row");
-    small.append(make("strong", "", workout.name));
-
-    const open = make("button", "outline-btn", "Abrir");
-    open.onclick = () => startWorkout(workout);
-    small.append(open);
-    upcoming.append(small);
   });
+
+  if (!workouts.length) {
+    upcoming.append(make("p", "empty-text", "Nenhuma ficha publicada até o momento."));
+  } else {
+    workouts.forEach(workout => {
+      const small = make("div", "student-row");
+      const info = make("div");
+      info.append(make("strong", "", workout.name));
+      info.append(make("p", "muted", dayName(workout.day)));
+      const open = make("button", "outline-btn", "Abrir ↗");
+      open.type = "button";
+      open.onclick = () => startWorkout(workout);
+      small.append(info, open);
+      upcoming.append(small);
+    });
+  }
+  weekSchedule();
 }
+
+$("student-workout-search").addEventListener("input", renderWorkouts);
+$("student-day-filter").addEventListener("change", renderWorkouts);
+
 
 function renderHistory() {
   const container = $("student-history");
   container.replaceChildren();
+  const term = $("student-history-search").value.trim().toLocaleLowerCase("pt-BR");
+  const filtered = logs.filter(log => String(log.workoutName || "Treino").toLocaleLowerCase("pt-BR").includes(term));
 
-  if (!logs.length) {
-    container.append(
-      make("p", "empty-text", "Você ainda não concluiu treinos.")
-    );
+  $("student-history-summary").textContent =
+    `${filtered.length} treino${filtered.length === 1 ? "" : "s"} registrado${filtered.length === 1 ? "" : "s"}`;
+
+  if (!filtered.length) {
+    container.append(make("p", "empty-text",
+      logs.length ? "Nenhum registro encontrado." : "Você ainda não concluiu treinos."));
     return;
   }
 
-  logs.forEach(log => {
-    const card = make("article", "panel-card");
-
-    card.append(
-      make("h3", "", log.workoutName || "Treino"),
-      make("p", "muted", dateText(log.createdAt))
-    );
+  filtered.forEach(log => {
+    const card = make("article", "panel-card history-card");
+    const heading = make("div", "card-heading");
+    const info = make("div");
+    info.append(make("h3", "", log.workoutName || "Treino"));
+    info.append(make("p", "muted", dateText(log.createdAt)));
+    const total = trainingVolume(log);
+    const volume = make("span", "volume-pill", `${ptNumber(total, 1)} kg de volume`);
+    heading.append(info, volume);
+    card.append(heading);
 
     (log.exercises || []).forEach(exercise => {
       const block = make("div", "log-exercise");
       block.append(make("strong", "", exercise.name));
 
       (exercise.series || []).forEach((series, index) => {
-        block.append(
-          make(
-            "p",
-            "muted",
-            `Série ${index + 1}: ${series.weight} kg • ${series.reps} repetições`
-          )
-        );
+        block.append(make("p", "muted",
+          `Série ${index + 1}: ${series.weight} kg · ${series.reps} repetições`));
       });
 
       card.append(block);
     });
-
     container.append(card);
   });
 }
+$("student-history-search").addEventListener("input", renderHistory);
 
 function drawBars(container, entries, unit) {
   container.replaceChildren();
@@ -309,71 +471,70 @@ function drawBars(container, entries, unit) {
 }
 
 function renderProgress() {
-  const sorted = [...measurements].sort(
-    (a, b) =>
-      (a.createdAt?.seconds || 0) -
-      (b.createdAt?.seconds || 0)
+  const sorted = [...measurements].sort((a, b) =>
+    (timestampDate(a.createdAt)?.getTime() || 0) -
+    (timestampDate(b.createdAt)?.getTime() || 0)
   );
-
-  const weightPoints = sorted.map(item => ({
-    value: Number(item.weight),
-    label: item.createdAt?.toDate
-      ? item.createdAt.toDate().toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit"
-        })
-      : "—"
-  }));
-
-  drawBars($("student-weight-chart"), weightPoints, "kg");
-
-  const strengthPoints = [...logs].reverse().map(log => {
-    let maxWeight = 0;
-
-    (log.exercises || []).forEach(exercise => {
-      (exercise.series || []).forEach(series => {
-        maxWeight = Math.max(
-          maxWeight,
-          Number(series.weight) || 0
-        );
-      });
-    });
-
+  const weights = sorted.map(item => {
+    const date = timestampDate(item.createdAt);
     return {
-      value: maxWeight,
-      label: log.createdAt?.toDate
-        ? log.createdAt.toDate().toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit"
-          })
-        : "—"
+      value: Number(item.weight) || 0,
+      label: date ? date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "—"
     };
-  }).filter(point => point.value > 0);
+  }).filter(item => item.value > 0);
+  drawBars($("student-weight-chart"), weights, "kg");
 
-  drawBars($("student-strength-chart"), strengthPoints, "kg");
+  const select = $("student-exercise-filter");
+  const previous = select.value;
+  const names = uniqueExercises(logs);
+  select.replaceChildren(new Option("Selecione um exercício", ""));
+  names.forEach(name => select.add(new Option(name, name)));
+  if (names.includes(previous)) select.value = previous;
+  else if (names.length) select.value = names[0];
+
+  const points = bestSetProgress(logs, select.value);
+  drawBars($("student-strength-chart"), points, "kg");
+
+  const latest = sorted.at(-1);
+  $("stat-weight").textContent = latest ? `${latest.weight} kg` : "—";
+  $("stat-measurements").textContent = measurements.length;
+
+  const summary = $("student-progress-summary");
+  summary.replaceChildren();
+  const cards = [
+    ["📅", "Treinos nos últimos 7 dias", String(recentLogs(logs).length)],
+    ["🏋️", "Volume total registrado", `${ptNumber(logs.reduce((n, item) => n + trainingVolume(item), 0), 1)} kg`],
+    ["📊", "Exercícios registrados", String(names.length)]
+  ];
+  cards.forEach(([icon, title, value]) => {
+    const card = make("div", "mini-stat");
+    card.append(
+      make("span", "mini-stat-icon", icon),
+      make("span", "mini-stat-label", title),
+      make("strong", "", value)
+    );
+    summary.append(card);
+  });
 
   const list = $("student-measurements");
   list.replaceChildren();
-
-  [...measurements].reverse().forEach(item => {
+  if (!sorted.length) {
+    list.append(make("p", "empty-text", "Nenhum registro de medidas ainda."));
+  }
+  [...sorted].reverse().forEach(item => {
     const card = make("article", "panel-card");
-
     card.append(
-      make("strong", "", `${item.weight} kg • ${item.height} cm`),
+      make("strong", "", `${item.weight} kg · ${item.height} cm`),
       make("p", "muted", dateText(item.createdAt))
     );
-
     list.append(card);
   });
-
-  const latest = sorted.at(-1);
-
-  $("stat-weight").textContent = latest
-    ? `${latest.weight} kg`
-    : "—";
-
-  $("stat-measurements").textContent = measurements.length;
 }
+
+$("student-exercise-filter").addEventListener("change", () => {
+  drawBars($("student-strength-chart"),
+    bestSetProgress(logs, $("student-exercise-filter").value), "kg");
+});
 
 async function refreshData() {
   const [workoutSnap, logSnap, measurementSnap] = await Promise.all([
@@ -426,35 +587,46 @@ $("training-form").onsubmit = async event => {
   event.preventDefault();
 
   if (!selectedWorkout || saving) return;
+  const rows = [...document.querySelectorAll("#training-exercises .series-row")];
+  const completed = rows.filter(row => row.querySelector('[data-type="done"]')?.checked);
+
+  if (!completed.length) {
+    $("training-message").textContent = "Marque pelo menos uma série como concluída antes de salvar.";
+    return;
+  }
+
+  for (const row of completed) {
+    const weight = row.querySelector('[data-type="weight"]');
+    const reps = row.querySelector('[data-type="reps"]');
+    if (weight.value.trim() === "" || reps.value.trim() === "" ||
+      !Number.isFinite(Number(weight.value)) || !Number.isFinite(Number(reps.value)) ||
+      Number(weight.value) < 0 || Number(weight.value) > 1000 ||
+      !Number.isInteger(Number(reps.value)) || Number(reps.value) < 1 || Number(reps.value) > 1000) {
+      $("training-message").textContent = "Preencha carga e repetições válidas em cada série marcada.";
+      weight.focus();
+      return;
+    }
+  }
+
+  if (completed.length < rows.length && !confirm(
+    `Você marcou ${completed.length} de ${rows.length} séries. Salvar somente as concluídas?`
+  )) return;
 
   saving = true;
   $("finish-workout").disabled = true;
   $("training-message").textContent = "Salvando treino...";
 
   try {
-    const exercises = selectedWorkout.exercises.map(
-      (exercise, index) => {
-        const group = document.querySelector(
-          `[data-exercise-index="${index}"]`
-        );
-
-        const series = [
-          ...group.querySelectorAll(".series-row")
-        ].map(row => ({
-          weight: Number(
-            row.querySelector('[data-type="weight"]').value
-          ),
-          reps: Number(
-            row.querySelector('[data-type="reps"]').value
-          )
+    const exercises = (selectedWorkout.exercises || []).map((exercise, index) => {
+      const group = document.querySelector(`[data-exercise-index="${index}"]`);
+      const series = [...group.querySelectorAll(".series-row")]
+        .filter(row => row.querySelector('[data-type="done"]').checked)
+        .map(row => ({
+          weight: Number(row.querySelector('[data-type="weight"]').value),
+          reps: Number(row.querySelector('[data-type="reps"]').value)
         }));
-
-        return {
-          name: exercise.name,
-          series
-        };
-      }
-    );
+      return { name: exercise.name, series };
+    }).filter(exercise => exercise.series.length);
 
     await addDoc(collection(db, "trainingLogs"), {
       studentId: currentUser.uid,
@@ -465,16 +637,13 @@ $("training-form").onsubmit = async event => {
     });
 
     selectedWorkout = null;
+    stopRestTimer();
     $("active-workout").hidden = true;
-
     await refreshData();
     showTab("history");
-
   } catch (error) {
-    console.error(error);
-
-    $("training-message").textContent =
-      "Não foi possível salvar. Confira sua conexão e as permissões.";
+    console.error("Erro ao salvar treino:", error);
+    $("training-message").textContent = "Não foi possível salvar. Verifique sua conexão e tente novamente.";
   } finally {
     saving = false;
     $("finish-workout").disabled = false;
@@ -580,6 +749,27 @@ onAuthStateChanged(auth, async user => {
   } catch (error) {
     console.error(error);
     accessError("Não foi possível verificar sua conta.");
+  }
+});
+
+
+$("student-password-reset").addEventListener("click", async () => {
+  const button = $("student-password-reset");
+  const feedback = $("student-profile-message");
+  if (!currentUser?.email) {
+    feedback.textContent = "Não há e-mail cadastrado nesta conta.";
+    return;
+  }
+  button.disabled = true;
+  feedback.textContent = "Enviando link...";
+  try {
+    await sendPasswordResetEmail(auth, currentUser.email);
+    feedback.textContent = "Enviamos um link de redefinição para seu e-mail.";
+  } catch (error) {
+    console.error(error);
+    feedback.textContent = "Não foi possível enviar o e-mail. Tente novamente.";
+  } finally {
+    button.disabled = false;
   }
 });
 

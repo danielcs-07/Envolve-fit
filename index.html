@@ -9,6 +9,9 @@
   <title>Entrar | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
+  <link rel="stylesheet" href="pro-features.css?v=1">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
 <body class="login-page">
   <div class="login-shell">
@@ -100,6 +103,8 @@
         <p id="auth-message" class="auth-message" role="status"></p>
       </form>
 
+      <div class="login-help"><button type="button" id="forgot-password">Esqueci minha senha</button></div>
+
       <div class="login-switch">
         <span id="switch-text">Ainda não tem uma conta?</span>
         <button id="switch-btn" type="button">
@@ -116,5 +121,6 @@
 
   <script type="module" src="auth-ui.js"></script>
   <script defer src="login-enhancements.js"></script>
+  <script defer src="pwa.js"></script>
 </body>
 </html>

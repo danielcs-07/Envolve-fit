@@ -3,7 +3,8 @@ import { auth, db } from "./firebase-config.js";
 
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
 import {
@@ -16,6 +17,11 @@ import {
   deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+import {
+  WEEK_DAYS, normalizeDay, timestampDate, recentLogs,
+  numberOfSeries, trainingVolume, uniqueExercises, bestSetProgress
+} from "./fitness-utils.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -359,91 +365,136 @@ function renderWorkouts() {
   const container = $("workout-list");
   container.replaceChildren();
 
-  if (!workouts.length) {
-    container.append(emptyMessage("Nenhum treino criado ainda."));
+  const search = $("trainer-workout-search").value.trim().toLocaleLowerCase("pt-BR");
+  const status = $("trainer-workout-status").value;
+  const studentId = $("trainer-workout-student").value;
+  const items = workouts.filter(workout => {
+    const haystack = [workout.name, workout.description,
+      ...(workout.exercises || []).map(ex => ex.name)].join(" ").toLocaleLowerCase("pt-BR");
+    return (!search || haystack.includes(search)) &&
+      (!status || workout.status === status) &&
+      (!studentId || workout.studentId === studentId);
+  });
+
+  if (!items.length) {
+    container.append(emptyMessage(workouts.length
+      ? "Nenhuma ficha corresponde aos filtros."
+      : "Nenhum treino criado ainda."));
     return;
   }
 
-  workouts.forEach(workout => {
+  const dayName = day => WEEK_DAYS.find(d => d.key === normalizeDay(day))?.label || "Dia livre";
+  items.forEach(workout => {
     const card = element("article", "panel-card workout-card");
     const heading = element("div", "card-heading");
     const left = element("div");
     const title = element("h3", "", workout.name);
-    const student = students.find(s => s.id === workout.studentId);
+    const student = students.find(item => item.id === workout.studentId);
 
-    left.append(
-      title,
-      element("p", "muted",
-        student ? `Aluno: ${student.name}` : "Aluno não selecionado"
-      )
-    );
+    left.append(title, element("p", "muted",
+      student ? `Aluno: ${student.name}` : "Aluno não selecionado"));
 
-    const badge = element(
-      "span",
-      workout.status === "published" ? "status-published" : "status-draft",
-      workout.status === "published" ? "Publicado" : "Rascunho"
-    );
-
+    const badge = element("span", workout.status === "published"
+      ? "status-published" : "status-draft", workout.status === "published" ? "Publicado" : "Rascunho");
     heading.append(left, badge);
 
-    const summary = element(
-      "p",
-      "muted",
-      `${workout.exercises.length} exercícios • ${workout.day || "Sem dia definido"}`
-    );
+    const summary = element("p", "muted",
+      `${(workout.exercises || []).length} exercícios · ${numberOfSeries(workout)} séries · ${dayName(workout.day)}`);
 
     const actions = element("div", "form-actions");
     const edit = element("button", "secondary-btn", "✏️ Editar");
+    const duplicate = element("button", "outline-btn", "⧉ Duplicar");
     const remove = element("button", "danger-outline", "🗑️ Excluir");
 
+    edit.type = "button";
+    duplicate.type = "button";
+    remove.type = "button";
     edit.onclick = () => editWorkout(workout);
+    duplicate.onclick = () => {
+      editWorkout(workout);
+      $("editing-id").value = "";
+      $("workout-name").value = `${workout.name} (cópia)`;
+      $("form-message").textContent = "Cópia pronta para editar. Salve como rascunho ou publique para o aluno.";
+    };
     remove.onclick = () => removeWorkout(workout);
 
-    actions.append(edit, remove);
+    actions.append(edit, duplicate, remove);
     card.append(heading, summary, actions);
     container.append(card);
   });
 }
+$("trainer-workout-search").addEventListener("input", renderWorkouts);
+$("trainer-workout-status").addEventListener("change", renderWorkouts);
+$("trainer-workout-student").addEventListener("change", renderWorkouts);
 
 function renderStudents() {
   const container = $("student-list");
   const select = $("workout-student");
   const selected = select.value;
+  const search = $("trainer-student-search").value.trim().toLocaleLowerCase("pt-BR");
+
+  const selectConfigs = [
+    [select, "Selecione um aluno", true],
+    [$("trainer-workout-student"), "Todos os alunos", false],
+    [$("trainer-history-student"), "Todos os alunos", false],
+    [$("trainer-progress-student"), "Selecione um aluno", false]
+  ];
+  selectConfigs.forEach(([node, placeholder, defaultFirst]) => {
+    const previous = node.value;
+    node.replaceChildren(new Option(placeholder, ""));
+    students.forEach(student => node.add(new Option(student.name, student.id)));
+    if (students.some(student => student.id === previous)) {
+      node.value = previous;
+    } else if (!defaultFirst && node.id === "trainer-progress-student" && students.length) {
+      node.value = students[0].id;
+    }
+  });
+
+  if (students.some(student => student.id === selected)) select.value = selected;
 
   container.replaceChildren();
-  select.replaceChildren(new Option("Selecione um aluno", ""));
+  const items = students.filter(student =>
+    [student.name, student.email].join(" ").toLocaleLowerCase("pt-BR").includes(search));
 
-  students.forEach(student => {
-    select.add(new Option(student.name, student.id));
+  $("trainer-student-count").textContent =
+    `${items.length} de ${students.length} aluno${students.length === 1 ? "" : "s"}`;
 
+  items.forEach(student => {
     const card = element("article", "student-row");
     const info = element("div");
     info.append(
-      element("strong", "", student.name),
-      element("p", "muted", "Aluno ativo")
+      element("strong", "", student.name || "Aluno"),
+      element("p", "muted", student.email || "Conta ativa")
     );
 
     const button = element("button", "outline-btn", "Criar treino");
+    button.type = "button";
     button.onclick = () => {
       clearForm();
       $("workout-student").value = student.id;
       showTab("create");
     };
-
-    card.append(info, button);
+    const history = element("button", "secondary-btn", "Histórico");
+    history.type = "button";
+    history.onclick = () => {
+      $("trainer-history-student").value = student.id;
+      renderLogs();
+      showTab("history");
+    };
+    const actions = element("div", "form-actions compact-actions");
+    actions.append(button, history);
+    card.append(info, actions);
     container.append(card);
   });
 
-  if (students.some(student => student.id === selected)) {
-    select.value = selected;
-  }
-
-  if (!students.length) {
-    container.append(
-      emptyMessage("Nenhum aluno autorizado ainda.")
-    );
+  if (!items.length) {
+    container.append(emptyMessage(students.length
+      ? "Nenhum aluno encontrado."
+      : "Nenhum aluno autorizado ainda."));
   }
 }
+
+$("trainer-student-search").addEventListener("input", renderStudents);
 
 function dateLabel(timestamp) {
   if (!timestamp?.toDate) return "Data não disponível";
@@ -453,56 +504,59 @@ function dateLabel(timestamp) {
 function renderLogs() {
   const container = $("log-list");
   const recent = $("recent-activity");
-
   container.replaceChildren();
   recent.replaceChildren();
 
-  if (!logs.length) {
-    container.append(emptyMessage("Nenhum treino registrado."));
-    recent.append(emptyMessage("Aguardando atividades dos alunos."));
-    return;
+  const studentId = $("trainer-history-student").value;
+  const search = $("trainer-history-search").value.trim().toLocaleLowerCase("pt-BR");
+  const items = logs.filter(log =>
+    (!studentId || log.studentId === studentId)
+      && (!search || String(log.workoutName || "").toLocaleLowerCase("pt-BR").includes(search)));
+
+  if (!items.length) {
+    container.append(emptyMessage(logs.length
+      ? "Nenhum treino encontrado com esses filtros."
+      : "Nenhum treino registrado."));
   }
 
-  logs.forEach((log, index) => {
+  items.forEach(log => {
     const student = students.find(s => s.id === log.studentId);
-    const card = element("article", "panel-card");
-    card.append(
+    const card = element("article", "panel-card history-card");
+    const heading = element("div", "card-heading");
+    const content = element("div");
+    content.append(
       element("h3", "", log.workoutName || "Treino"),
-      element("p", "muted",
-        `${student?.name || "Aluno"} • ${dateLabel(log.createdAt)}`
-      )
+      element("p", "muted", `${student?.name || "Aluno"} · ${dateLabel(log.createdAt)}`)
     );
+    const volume = element("span", "volume-pill",
+      `${trainingVolume(log).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg de volume`);
+    heading.append(content, volume);
+    card.append(heading);
 
     (log.exercises || []).forEach(exercise => {
       const block = element("div", "log-exercise");
       block.append(element("strong", "", exercise.name));
-
       (exercise.series || []).forEach((series, i) => {
-        block.append(
-          element(
-            "p",
-            "muted",
-            `Série ${i + 1}: ${series.weight} kg • ${series.reps} repetições`
-          )
-        );
+        block.append(element("p", "muted",
+          `Série ${i + 1}: ${series.weight} kg · ${series.reps} repetições`));
       });
-
       card.append(block);
     });
-
     container.append(card);
-
-    if (index < 3) {
-      recent.append(
-        element(
-          "p",
-          "activity-item",
-          `${student?.name || "Aluno"} concluiu ${log.workoutName || "um treino"}`
-        )
-      );
-    }
   });
+
+  if (!logs.length) {
+    recent.append(emptyMessage("Aguardando atividades dos alunos."));
+  } else {
+    logs.slice(0, 4).forEach(log => {
+      const student = students.find(s => s.id === log.studentId);
+      recent.append(element("p", "activity-item",
+        `${student?.name || "Aluno"} · ${log.workoutName || "Treino"} · ${dateLabel(log.createdAt)}`));
+    });
+  }
 }
+$("trainer-history-student").addEventListener("change", renderLogs);
+$("trainer-history-search").addEventListener("input", renderLogs);
 
 function drawBars(container, entries, unit) {
   container.replaceChildren();
@@ -532,64 +586,81 @@ function drawBars(container, entries, unit) {
 }
 
 function renderProgress() {
-  const weights = [...measurements]
-    .filter(item => Number.isFinite(item.weight) && item.weight > 0)
-    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
-    .map(item => ({
-      value: item.weight,
-      label: item.createdAt?.toDate
-        ? item.createdAt.toDate().toLocaleDateString("pt-BR", {
-            day: "2-digit", month: "2-digit"
-          })
-        : "—"
-    }));
+  const studentId = $("trainer-progress-student").value;
+  const student = students.find(s => s.id === studentId);
+  const selectedLogs = logs.filter(log => log.studentId === studentId);
+  const selectedMeasurements = measurements
+    .filter(item => item.studentId === studentId)
+    .sort((a,b) => (timestampDate(a.createdAt)?.getTime() || 0)
+      - (timestampDate(b.createdAt)?.getTime() || 0));
 
-  drawBars($("trainer-weight-chart"), weights, "kg");
+  const select = $("trainer-progress-exercise");
+  const previous = select.value;
+  const names = uniqueExercises(selectedLogs);
+  select.replaceChildren(new Option("Selecione um exercício", ""));
+  names.forEach(name => select.add(new Option(name, name)));
+  if (names.includes(previous)) select.value = previous;
+  else if (names.length) select.value = names[0];
 
-  const strength = [];
+  const weightPoints = selectedMeasurements.map(item => {
+    const date = timestampDate(item.createdAt);
+    return {
+      value: Number(item.weight) || 0,
+      label: date ? date.toLocaleDateString("pt-BR", {
+        day: "2-digit", month: "2-digit"
+      }) : "—"
+    };
+  }).filter(item => item.value > 0);
 
-  [...logs].reverse().forEach(log => {
-    let maxWeight = 0;
+  drawBars($("trainer-weight-chart"), weightPoints, "kg");
+  drawBars($("trainer-strength-chart"),
+    bestSetProgress(selectedLogs, select.value), "kg");
 
-    (log.exercises || []).forEach(exercise => {
-      (exercise.series || []).forEach(series => {
-        maxWeight = Math.max(maxWeight, Number(series.weight) || 0);
-      });
-    });
-
-    if (maxWeight > 0) {
-      strength.push({
-        value: maxWeight,
-        label: log.createdAt?.toDate
-          ? log.createdAt.toDate().toLocaleDateString("pt-BR", {
-              day: "2-digit", month: "2-digit"
-            })
-          : "—"
-      });
-    }
+  const summary = $("trainer-progress-summary");
+  summary.replaceChildren();
+  const volume = selectedLogs.reduce((total, log) => total + trainingVolume(log), 0);
+  const cards = [
+    ["👤", "Aluno selecionado", student?.name || "Nenhum"],
+    ["✅", "Treinos concluídos", String(selectedLogs.length)],
+    ["📅", "Treinos em 7 dias", String(recentLogs(selectedLogs).length)],
+    ["🏋️", "Volume acumulado", `${volume.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg`]
+  ];
+  cards.forEach(([icon, label, value]) => {
+    const card = element("div", "mini-stat");
+    card.append(
+      element("span", "mini-stat-icon", icon),
+      element("span", "mini-stat-label", label),
+      element("strong", "", value)
+    );
+    summary.append(card);
   });
-
-  drawBars($("trainer-strength-chart"), strength, "kg");
 
   const container = $("measurement-list");
   container.replaceChildren();
 
-  [...measurements].reverse().forEach(item => {
-    const student = students.find(s => s.id === item.studentId);
-    const card = element("article", "panel-card");
+  if (!studentId) {
+    container.append(emptyMessage("Selecione um aluno para ver a evolução individual."));
+  } else if (!selectedMeasurements.length) {
+    container.append(emptyMessage("Este aluno ainda não registrou medidas."));
+  }
 
+  [...selectedMeasurements].reverse().forEach(item => {
+    const card = element("article", "panel-card");
     card.append(
       element("h3", "", student?.name || "Aluno"),
-      element(
-        "p",
-        "muted",
-        `${item.weight} kg • ${item.height || "—"} cm • ${dateLabel(item.createdAt)}`
-      )
+      element("p", "muted",
+        `${item.weight} kg · ${item.height || "—"} cm · ${dateLabel(item.createdAt)}`)
     );
-
     container.append(card);
   });
 }
+$("trainer-progress-student").addEventListener("change", renderProgress);
+$("trainer-progress-exercise").addEventListener("change", () => {
+  const selectedLogs = logs.filter(log =>
+    log.studentId === $("trainer-progress-student").value);
+  drawBars($("trainer-strength-chart"),
+    bestSetProgress(selectedLogs, $("trainer-progress-exercise").value), "kg");
+});
 
 function renderDashboard() {
   $("stat-students").textContent = students.length;
@@ -597,6 +668,19 @@ function renderDashboard() {
   $("stat-published").textContent =
     workouts.filter(w => w.status === "published").length;
   $("stat-logs").textContent = logs.length;
+  const weekly = $("trainer-weekly-stats");
+  weekly.replaceChildren();
+  const weekLogs = recentLogs(logs);
+  [
+    ["📅", "Treinos desta semana", String(weekLogs.length)],
+    ["💪", "Alunos que treinaram", String(new Set(weekLogs.map(log => log.studentId)).size)],
+    ["⏱️", "Último registro", logs.length ? dateLabel(logs[0].createdAt) : "Ainda não há"]
+  ].forEach(([icon, label, value]) => {
+    const card = element("div", "mini-stat");
+    card.append(element("span", "mini-stat-icon", icon),
+      element("span", "mini-stat-label", label), element("strong", "", value));
+    weekly.append(card);
+  });
 
   const overview = $("overview-progress");
   overview.replaceChildren();
@@ -703,6 +787,65 @@ onAuthStateChanged(auth, async user => {
   } catch (error) {
     console.error(error);
     accessError("Não foi possível verificar sua conta.");
+  }
+});
+
+
+function downloadCsv(filename, rows) {
+  const escapeCell = value => {
+    let text = String(value ?? "");
+    if (/^[\s]*[=+@-]/.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  const csv = "\uFEFF" + rows.map(row => row.map(escapeCell).join(";")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$("trainer-export-csv").addEventListener("click", () => {
+  const studentId = $("trainer-history-student").value;
+  const text = $("trainer-history-search").value.trim().toLocaleLowerCase("pt-BR");
+  const selected = logs.filter(log =>
+    (!studentId || log.studentId === studentId) &&
+    (!text || String(log.workoutName || "").toLocaleLowerCase("pt-BR").includes(text)));
+  const rows = [["Aluno", "Treino", "Data", "Exercício", "Série", "Carga (kg)", "Repetições"]];
+  selected.forEach(log => {
+    const student = students.find(item => item.id === log.studentId);
+    (log.exercises || []).forEach(exercise =>
+      (exercise.series || []).forEach((set, index) => {
+        rows.push([student?.name || "Aluno", log.workoutName || "",
+          dateLabel(log.createdAt), exercise.name, index + 1, set.weight, set.reps]);
+      })
+    );
+  });
+  if (rows.length < 2) {
+    alert("Nenhum registro com séries para exportar.");
+    return;
+  }
+  downloadCsv("evolve-fit-historico.csv", rows);
+});
+
+$("trainer-password-reset").addEventListener("click", async () => {
+  const button = $("trainer-password-reset");
+  const feedback = $("trainer-profile-message");
+  if (!currentUser?.email) {
+    feedback.textContent = "Não há e-mail cadastrado.";
+    return;
+  }
+  button.disabled = true;
+  feedback.textContent = "Enviando link...";
+  try {
+    await sendPasswordResetEmail(auth, currentUser.email);
+    feedback.textContent = "Link de redefinição enviado para o seu e-mail.";
+  } catch (error) {
+    console.error(error);
+    feedback.textContent = "Não foi possível enviar o e-mail. Tente novamente.";
+  } finally {
+    button.disabled = false;
   }
 });
 

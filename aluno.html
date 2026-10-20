@@ -7,6 +7,9 @@
   <title>Meus Treinos | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
+  <link rel="stylesheet" href="pro-features.css?v=1">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
 <body class="dashboard-page">
 
@@ -108,8 +111,17 @@
             </article>
           </div>
 
+          <section class="dashboard-workout-highlight" id="student-today-feature" aria-live="polite"></section>
+
+          <article class="panel-card weekly-panel">
+            <div class="card-heading">
+              <div><h3>📅 Sua semana de treinos</h3><p>Organize seus exercícios e respeite os dias de descanso.</p></div>
+            </div>
+            <div id="week-strip" class="week-strip"></div>
+          </article>
+
           <article class="panel-card">
-            <h3>📅 Seus próximos treinos</h3>
+            <h3>🏋️ Suas fichas disponíveis</h3>
             <div id="upcoming-workouts"></div>
           </article>
         </section>
@@ -120,6 +132,23 @@
             <p>Escolha uma ficha para começar.</p>
           </div>
 
+          <div class="feature-toolbar">
+            <label class="filter-field">Buscar treino
+              <input id="student-workout-search" type="search" placeholder="Nome ou exercício">
+            </label>
+            <label class="filter-field">Dia da semana
+              <select id="student-day-filter">
+                <option value="">Todos os dias</option>
+                <option value="segunda">Segunda-feira</option>
+                <option value="terca">Terça-feira</option>
+                <option value="quarta">Quarta-feira</option>
+                <option value="quinta">Quinta-feira</option>
+                <option value="sexta">Sexta-feira</option>
+                <option value="sabado">Sábado</option>
+                <option value="domingo">Domingo</option>
+              </select>
+            </label>
+          </div>
           <div id="student-workout-list" class="cards-list"></div>
 
           <article id="active-workout" class="panel-card" hidden>
@@ -133,6 +162,15 @@
               </button>
             </div>
 
+            <div class="workout-progress-panel">
+              <div class="progress-header"><strong>Seu progresso no treino</strong><span id="workout-progress-text">0 de 0 séries</span></div>
+              <progress id="workout-progress" value="0" max="1"></progress>
+              <p class="muted">Marque cada série concluída. Somente as séries marcadas serão registradas.</p>
+            </div>
+            <div class="rest-timer" id="rest-timer" aria-live="polite">
+              <span>⏱️ Descanso</span><strong id="rest-time">Pronto para começar</strong>
+              <button type="button" id="rest-stop" class="outline-btn">Parar</button>
+            </div>
             <form id="training-form">
               <div id="training-exercises"></div>
               <button id="finish-workout" class="primary-btn" type="submit">
@@ -147,6 +185,12 @@
           <div class="section-heading">
             <h2>📋 Histórico</h2>
             <p>Veja seus treinos realizados.</p>
+          </div>
+          <div class="feature-toolbar">
+            <label class="filter-field">Pesquisar histórico
+              <input id="student-history-search" type="search" placeholder="Nome do treino">
+            </label>
+            <div class="toolbar-stat" id="student-history-summary"></div>
           </div>
           <div id="student-history" class="cards-list"></div>
         </section>
@@ -181,6 +225,7 @@
             <p id="measurement-message" role="status"></p>
           </article>
 
+          <div id="student-progress-summary" class="mini-stats-grid"></div>
           <div class="panel-grid">
             <article class="panel-card">
               <h3>⚖️ Histórico de peso</h3>
@@ -188,7 +233,10 @@
             </article>
 
             <article class="panel-card">
-              <h3>🏋️ Cargas registradas</h3>
+              <h3>🏋️ Progressão de cargas</h3>
+              <label class="filter-field">Exercício
+                <select id="student-exercise-filter"><option value="">Escolha um exercício</option></select>
+              </label>
               <div id="student-strength-chart" class="chart-area"></div>
             </article>
           </div>
@@ -205,6 +253,8 @@
             <h3 id="profile-name">Aluno</h3>
             <p id="profile-email"></p>
             <span class="role-pill">Conta de aluno</span>
+            <button type="button" id="student-password-reset" class="outline-btn profile-action">Enviar link para redefinir senha</button>
+            <p class="status-message" id="student-profile-message" role="status"></p>
           </article>
         </section>
 
@@ -217,5 +267,6 @@
   </div>
 
   <script type="module" src="aluno.js"></script>
+  <script defer src="pwa.js"></script>
 </body>
 </html>
