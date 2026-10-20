@@ -738,11 +738,12 @@ async function refreshData() {
 async function ensureWeeklyDrafts() {
   const refs = WEEKLY_DRAFTS.map(workout =>
     doc(db, "workouts", `${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${workout.day}`));
-  const existing = await Promise.all(refs.map(ref => getDoc(ref)));
+  const snapshot = await getDocs(collection(db, "workouts"));
+  const existing = new Set(snapshot.docs.map(item => item.id));
   const batch = writeBatch(db);
   let added = 0;
   WEEKLY_DRAFTS.forEach((workout, index) => {
-    if (existing[index].exists()) return;
+    if (existing.has(refs[index].id)) return;
     batch.set(refs[index], {
       ...workout,
       trainerId: currentUser.uid,
@@ -754,7 +755,42 @@ async function ensureWeeklyDrafts() {
     added++;
   });
   if (added) await batch.commit();
+  return added;
 }
+
+
+const draftPanel = element("section", "panel-card");
+const draftMessage = element("p", "status-message", "Treino de segunda a sábado • aquecimento + 12, 10 e 8 • sem aluno vinculado.");
+draftMessage.setAttribute("role", "status");
+const importDraftsButton = element("button", "primary-btn", "Importar meus 6 rascunhos");
+importDraftsButton.type = "button";
+draftPanel.append(element("h3", "", "Seu treino semanal"), draftMessage, importDraftsButton);
+$("workout-list").before(draftPanel);
+let importingDrafts = false;
+async function importWeeklyDrafts() {
+  if (!currentUser || importingDrafts) return;
+  importingDrafts = true;
+  importDraftsButton.disabled = true;
+  draftMessage.textContent = "Conferindo e salvando seus rascunhos...";
+  try {
+    const added = await ensureWeeklyDrafts();
+    await refreshData();
+    draftMessage.textContent = added
+      ? `${added} rascunho(s) salvo(s), sem aluno vinculado. Veja as fichas abaixo.`
+      : "Os seis treinos já foram importados. Confira as fichas abaixo.";
+    $("trainer-workout-search").value = "";
+    $("trainer-workout-status").value = "";
+    $("trainer-workout-student").value = "";
+    renderWorkouts();
+  } catch (error) {
+    console.error("Erro ao importar rascunhos:", error);
+    draftMessage.textContent = `Não foi possível importar: ${error.code || error.message || "erro desconhecido"}. Tente novamente ou informe esta mensagem.`;
+  } finally {
+    importingDrafts = false;
+    importDraftsButton.disabled = false;
+  }
+}
+importDraftsButton.onclick = importWeeklyDrafts;
 
 function accessError(message) {
   $("app").hidden = true;
@@ -803,13 +839,8 @@ onAuthStateChanged(auth, async user => {
     clearForm();
 
     try {
-      try {
-        await ensureWeeklyDrafts();
-      } catch (error) {
-        console.error("Erro ao adicionar rascunhos semanais:", error);
-        alert("Não foi possível salvar os seis rascunhos semanais. Confira sua conexão e as permissões do Firestore e entre novamente para tentar.");
-      }
       await refreshData();
+      await importWeeklyDrafts();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       alert("Painel aberto, mas alguns dados não puderam ser carregados. Confira as regras do Firestore.");
