@@ -4,7 +4,8 @@ import { auth, db } from "./firebase-config.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut
+  signOut,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
 import {
@@ -13,62 +14,109 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const form = document.getElementById("auth-form");
-const title = document.getElementById("form-title");
-const subtitle = document.getElementById("form-subtitle");
+const formTitle = document.getElementById("form-title");
+const formSubtitle = document.getElementById("form-subtitle");
 const nameGroup = document.getElementById("name-group");
 const nameInput = document.getElementById("name");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
-const message = document.getElementById("auth-message");
-const submitBtn = document.getElementById("submit-btn");
+const submitButton = document.getElementById("submit-btn");
+const switchButton = document.getElementById("switch-btn");
 const switchText = document.getElementById("switch-text");
-const switchBtn = document.getElementById("switch-btn");
+const message = document.getElementById("auth-message");
 
 let isRegistering = false;
+let isBusy = false;
 
-function showMessage(text) {
+function showMessage(text, type = "") {
   message.textContent = text;
+  message.className = "auth-message";
+
+  if (type) {
+    message.classList.add(type);
+  }
 }
 
 function updateForm() {
-  title.textContent = isRegistering ? "Criar conta" : "Entrar";
-  subtitle.textContent = isRegistering
-    ? "Crie sua conta para começar."
-    : "Entre para acessar seus treinos.";
+  formTitle.textContent = isRegistering
+    ? "Crie sua conta"
+    : "Bem-vindo de volta!";
+
+  formSubtitle.textContent = isRegistering
+    ? "Cadastre-se para começar sua evolução."
+    : "Entre na sua conta para continuar evoluindo.";
 
   nameGroup.hidden = !isRegistering;
   nameInput.required = isRegistering;
 
-  submitBtn.textContent = isRegistering
-    ? "Criar conta"
-    : "Entrar";
+  passwordInput.autocomplete = isRegistering
+    ? "new-password"
+    : "current-password";
+
+  submitButton.textContent = isRegistering
+    ? "Criar minha conta"
+    : "Entrar na minha conta";
 
   switchText.textContent = isRegistering
-    ? "Já tem uma conta?"
+    ? "Já possui uma conta?"
     : "Ainda não tem uma conta?";
 
-  switchBtn.textContent = isRegistering
-    ? "Entrar"
-    : "Cadastre-se";
+  switchButton.textContent = isRegistering
+    ? "Fazer login"
+    : "Criar conta";
 
   showMessage("");
 }
 
-switchBtn.addEventListener("click", () => {
+async function getAuthorizedProfile(user) {
+  const profileSnapshot = await getDoc(
+    doc(db, "users", user.uid)
+  );
+
+  if (!profileSnapshot.exists()) {
+    return null;
+  }
+
+  const profile = profileSnapshot.data();
+
+  if (
+    profile.active !== true ||
+    !["trainer", "student"].includes(profile.role)
+  ) {
+    return null;
+  }
+
+  return profile;
+}
+
+function redirectToDashboard(role) {
+  const destination = role === "trainer"
+    ? "treinador.html"
+    : "aluno.html";
+
+  window.location.replace(destination);
+}
+
+switchButton.addEventListener("click", () => {
+  if (isBusy) return;
+
   isRegistering = !isRegistering;
   updateForm();
 });
 
-form.addEventListener("submit", async (event) => {
+form.addEventListener("submit", async event => {
   event.preventDefault();
 
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
+  if (isBusy) return;
 
-  submitBtn.disabled = true;
-  showMessage("Aguarde...");
+  isBusy = true;
+  submitButton.disabled = true;
+  showMessage("Aguarde, estamos verificando...");
 
   try {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
     if (isRegistering) {
       await createUserWithEmailAndPassword(
         auth,
@@ -78,8 +126,13 @@ form.addEventListener("submit", async (event) => {
 
       await signOut(auth);
 
+      form.reset();
+      isRegistering = false;
+      updateForm();
+
       showMessage(
-        "Conta criada! Aguarde a liberação do treinador."
+        "Conta criada! Aguarde a autorização do treinador.",
+        "success"
       );
 
       return;
@@ -91,60 +144,59 @@ form.addEventListener("submit", async (event) => {
       password
     );
 
-    const profileRef = doc(
-      db,
-      "users",
-      credential.user.uid
+    const profile = await getAuthorizedProfile(
+      credential.user
     );
 
-    const profileSnap = await getDoc(profileRef);
-
-    if (!profileSnap.exists()) {
+    if (!profile) {
       await signOut(auth);
+
       showMessage(
-        "Sua conta ainda não foi liberada."
+        "Sua conta ainda não está autorizada.",
+        "error"
       );
+
       return;
     }
 
-    const profile = profileSnap.data();
+    redirectToDashboard(profile.role);
 
-    if (profile.active !== true) {
-      await signOut(auth);
-      showMessage("Sua conta está desativada.");
-      return;
-    }
+  } catch (error) {
+    console.error("Erro de autenticação:", error);
 
-    if (profile.role === "trainer") {
-  window.location.replace("treinador.html");
-    } else if (profile.role === "student") {
-      showMessage("Login realizado! Bem-vindo, aluno.");
-    } else {
-      await signOut(auth);
-      showMessage("Perfil não autorizado.");
+    const errors = {
+      "auth/invalid-email": "Digite um e-mail válido.",
+      "auth/invalid-credential": "E-mail ou senha incorretos.",
+      "auth/email-already-in-use": "Este e-mail já está cadastrado.",
+      "auth/weak-password": "A senha deve ter pelo menos 6 caracteres.",
+      "auth/too-many-requests": "Muitas tentativas. Tente novamente mais tarde.",
+      "auth/network-request-failed": "Verifique sua conexão com a internet.",
+      "permission-denied": "Você não tem permissão para acessar estes dados."
+    };
+
+    showMessage(
+      errors[error.code] ||
+      "Não foi possível concluir a operação. Tente novamente.",
+      "error"
+    );
+
+  } finally {
+    isBusy = false;
+    submitButton.disabled = false;
+  }
+});
+
+onAuthStateChanged(auth, async user => {
+  if (!user || isBusy || isRegistering) return;
+
+  try {
+    const profile = await getAuthorizedProfile(user);
+
+    if (profile) {
+      redirectToDashboard(profile.role);
     }
   } catch (error) {
-    console.error(error);
-
-    if (
-      error.code === "auth/invalid-credential" ||
-      error.code === "auth/wrong-password" ||
-      error.code === "auth/user-not-found"
-    ) {
-      showMessage("E-mail ou senha incorretos.");
-    } else if (error.code === "auth/email-already-in-use") {
-      showMessage("Este e-mail já está cadastrado.");
-    } else if (error.code === "auth/weak-password") {
-      showMessage("Use uma senha com pelo menos 6 caracteres.");
-    } else if (error.code === "auth/invalid-email") {
-      showMessage("Digite um e-mail válido.");
-    } else {
-      showMessage(
-        "Não foi possível concluir. Tente novamente."
-      );
-    }
-  } finally {
-    submitBtn.disabled = false;
+    console.error("Erro ao verificar sessão:", error);
   }
 });
 
