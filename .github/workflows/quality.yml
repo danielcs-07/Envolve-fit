@@ -1,0 +1,23 @@
+name: Validar Evolve Fit
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conferir sintaxe dos scripts
+        run: |
+          for file in aluno.js treinador.js auth-ui.js aprovacao.js firebase-config.js fitness-utils.mjs pwa.js sw.js login-enhancements.js; do
+            node --input-type=module --check < "$file"
+          done
+      - name: Testar regras de calendário e contratos das telas
+        run: node --test tests/*.test.mjs
