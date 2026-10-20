@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Evolve Fit">
+<rect width="512" height="512" rx="110" fill="#14231e"/>
+<path d="M83 294l55-55 52 52 132-132 66 66" stroke="#cdf568" stroke-width="36" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="88" y="341" width="336" height="24" rx="12" fill="#cdf568" opacity=".7"/>
+<text x="256" y="432" fill="#ffffff" text-anchor="middle" font-size="65" font-family="Arial,sans-serif" font-weight="800" letter-spacing="-4">EVOLVE</text>
+</svg>
