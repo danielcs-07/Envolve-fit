@@ -235,6 +235,8 @@ function startWorkout(workout) {
     const id = youtubeId(exercise.video);
 
     if (/^[A-Za-z0-9_-]{11}$/.test(id)) {
+      const videoDetails = document.createElement("details");
+      videoDetails.append(make("summary", "video-link", "▶ Ver execução"));
       const video = document.createElement("iframe");
       video.className = "exercise-video";
       video.src = `https://www.youtube-nocookie.com/embed/${id}`;
@@ -244,13 +246,22 @@ function startWorkout(workout) {
         "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
       video.allowFullscreen = true;
       video.referrerPolicy = "strict-origin-when-cross-origin";
-      card.append(video);
+      videoDetails.append(video);
 
       const link = make("a", "video-link", "Abrir vídeo no YouTube");
       link.href = `https://www.youtube.com/watch?v=${id}`;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      card.append(link);
+      videoDetails.append(link);
+      const alternativeId = youtubeId(exercise.videoAlternative);
+      if (/^[A-Za-z0-9_-]{11}$/.test(alternativeId)) {
+        const alternative = make("a", "video-link", "Ver execução da alternativa");
+        alternative.href = `https://www.youtube.com/watch?v=${alternativeId}`;
+        alternative.target = "_blank";
+        alternative.rel = "noopener noreferrer";
+        videoDetails.append(document.createElement("br"), alternative);
+      }
+      card.append(videoDetails);
     }
 
     const rest = make("button", "outline-btn rest-action",
