@@ -3,348 +3,306 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#2563eb">
-  <meta name="description" content="Painel de acompanhamento Evolve Fit">
   <title>Painel do Treinador | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="dashboard-page">
 
-  <div id="dashboard-loading" class="dashboard-loading">
-    <h2>💪 Evolve Fit</h2>
+  <div id="loading" class="loading">
+    <div class="loading-icon">💪</div>
+    <h2>Evolve Fit</h2>
     <p>Verificando seu acesso...</p>
   </div>
 
-  <div id="dashboard-app" class="dashboard-layout" hidden>
-
-    <aside class="dashboard-sidebar">
+  <div id="app" class="app-layout" hidden>
+    <aside class="sidebar">
       <div class="sidebar-brand">
-        <span class="brand-icon">💪</span>
+        <div class="brand-icon">💪</div>
         <div>
           <h2>Evolve Fit</h2>
           <small>Área do treinador</small>
         </div>
       </div>
 
-      <nav class="dashboard-nav">
-        <button class="nav-item active" data-section="inicio">
+      <nav class="sidebar-nav" aria-label="Menu principal">
+        <button class="nav-item active" data-tab="dashboard">
           🏠 Visão geral
         </button>
-
-        <button class="nav-item" data-section="alunos">
+        <button class="nav-item" data-tab="create">
+          ➕ Criar treino
+        </button>
+        <button class="nav-item" data-tab="workouts">
+          🏋️ Meus treinos
+        </button>
+        <button class="nav-item" data-tab="students">
           👥 Meus alunos
         </button>
-
-        <button class="nav-item" data-section="treinos">
-          🏋️ Treinos
+        <button class="nav-item" data-tab="history">
+          📋 Histórico
         </button>
-
-        <button class="nav-item" data-section="evolucao">
+        <button class="nav-item" data-tab="progress">
           📈 Evolução
         </button>
-
-        <button class="nav-item" data-section="historico">
-          📅 Histórico
-        </button>
-
-        <button class="nav-item" data-section="perfil">
+        <button class="nav-item" data-tab="profile">
           ⚙️ Meu perfil
         </button>
       </nav>
 
-      <div class="sidebar-footer">
+      <div class="sidebar-bottom">
         <p>Treine. Evolua. Conquiste.</p>
-        <button id="logout-btn" type="button">
+        <button id="logout" class="logout-btn">
           🚪 Sair da conta
         </button>
       </div>
     </aside>
 
-    <div class="dashboard-content">
-
-      <header class="dashboard-topbar">
+    <div class="content-area">
+      <header class="topbar">
         <div>
-          <p class="topbar-label">Painel de controle</p>
+          <p class="eyebrow">PAINEL DE CONTROLE</p>
           <h1 id="page-title">Visão geral</h1>
         </div>
-
-        <div class="topbar-actions">
-          <span class="trainer-badge">Treinador</span>
-          <div class="avatar" id="trainer-avatar">T</div>
+        <div class="topbar-user">
+          <span class="role-pill">Treinador</span>
+          <span id="avatar" class="avatar">T</span>
         </div>
       </header>
 
-      <main class="dashboard-main">
+      <main class="main-content">
 
-        <section id="section-inicio" class="dashboard-section active">
-
-          <div class="welcome-banner">
+        <section id="tab-dashboard" class="tab active">
+          <div class="hero">
             <div>
-              <span class="welcome-tag">EVOLVE FIT</span>
-              <h2>Olá, <span id="trainer-name">treinador</span>! 👋</h2>
+              <span class="hero-tag">EVOLVE FIT</span>
+              <h2>Olá, <span id="welcome-name">treinador</span>! 👋</h2>
               <p>
-                Acompanhe o desempenho dos seus alunos
-                e organize os próximos treinos.
+                Organize seus treinos, acompanhe seus alunos
+                e transforme cada evolução em resultado.
               </p>
+              <button id="quick-create" class="hero-button">
+                ➕ Criar novo treino
+              </button>
             </div>
-            <div class="welcome-emoji">🏋️</div>
+            <div class="hero-art">🏋️</div>
           </div>
 
           <div class="stats-grid">
-
             <article class="stat-card">
-              <div class="stat-icon">👥</div>
+              <span class="stat-icon">👥</span>
               <p>Alunos ativos</p>
-              <h3 id="stat-students">—</h3>
-              <small>Alunos autorizados</small>
+              <strong id="stat-students">0</strong>
+              <small>Contas autorizadas</small>
             </article>
 
             <article class="stat-card">
-              <div class="stat-icon">💪</div>
-              <p>Treinos cadastrados</p>
-              <h3 id="stat-workouts">—</h3>
-              <small>Planos disponíveis</small>
+              <span class="stat-icon">💪</span>
+              <p>Treinos criados</p>
+              <strong id="stat-workouts">0</strong>
+              <small>Fichas cadastradas</small>
             </article>
 
             <article class="stat-card">
-              <div class="stat-icon">✅</div>
+              <span class="stat-icon">🚀</span>
+              <p>Treinos publicados</p>
+              <strong id="stat-published">0</strong>
+              <small>Disponíveis para alunos</small>
+            </article>
+
+            <article class="stat-card">
+              <span class="stat-icon">📋</span>
               <p>Treinos realizados</p>
-              <h3 id="stat-completed">—</h3>
-              <small>Registros dos alunos</small>
+              <strong id="stat-logs">0</strong>
+              <small>Registros recebidos</small>
             </article>
-
-            <article class="stat-card">
-              <div class="stat-icon">📈</div>
-              <p>Última evolução</p>
-              <h3 id="stat-progress">—</h3>
-              <small>Comparação de desempenho</small>
-            </article>
-
           </div>
 
-          <div class="dashboard-grid">
-
-            <article class="dashboard-card">
+          <div class="panel-grid">
+            <article class="panel-card">
               <div class="card-heading">
                 <div>
-                  <h3>📊 Evolução de desempenho</h3>
-                  <p>Progresso registrado ao longo das semanas</p>
+                  <h3>📈 Evolução dos alunos</h3>
+                  <p>Desempenho registrado nos treinos</p>
                 </div>
               </div>
-
-              <div id="overview-chart" class="chart-placeholder">
-                <span>📉</span>
-                <p>Os gráficos aparecerão quando houver registros.</p>
+              <div id="overview-progress" class="empty-state">
+                <span>📊</span>
+                <p>Os resultados aparecerão após os primeiros treinos.</p>
               </div>
             </article>
 
-            <article class="dashboard-card">
+            <article class="panel-card">
               <div class="card-heading">
                 <div>
-                  <h3>📅 Atividades recentes</h3>
-                  <p>Últimos treinos registrados</p>
+                  <h3>🕒 Atividades recentes</h3>
+                  <p>Últimos registros enviados</p>
                 </div>
               </div>
-
               <div id="recent-activity" class="empty-state">
-                <span>📋</span>
-                <p>Nenhuma atividade registrada ainda.</p>
+                <span>📅</span>
+                <p>Nenhuma atividade registrada.</p>
               </div>
             </article>
-
           </div>
-
-          <article class="dashboard-card">
-            <div class="card-heading">
-              <div>
-                <h3>🎯 Acompanhamento semanal</h3>
-                <p>Treinos programados para a semana</p>
-              </div>
-            </div>
-
-            <div class="week-grid">
-              <div class="week-day">
-                <strong>SEG</strong>
-                <span>Quadríceps</span>
-              </div>
-              <div class="week-day">
-                <strong>TER</strong>
-                <span>Costas e bíceps</span>
-              </div>
-              <div class="week-day">
-                <strong>QUA</strong>
-                <span>Posterior e glúteos</span>
-              </div>
-              <div class="week-day">
-                <strong>QUI</strong>
-                <span>Peito e tríceps</span>
-              </div>
-              <div class="week-day">
-                <strong>SEX</strong>
-                <span>Ombros e antebraço</span>
-              </div>
-            </div>
-          </article>
-
         </section>
 
-        <section id="section-alunos" class="dashboard-section">
+        <section id="tab-create" class="tab">
+          <div class="section-heading">
+            <div>
+              <h2>✨ Criador de treinos</h2>
+              <p>Monte uma ficha personalizada do zero.</p>
+            </div>
+          </div>
+
+          <form id="workout-form" class="panel-card">
+            <input type="hidden" id="editing-id">
+
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="workout-name">Nome do treino *</label>
+                <input id="workout-name" required maxlength="100"
+                  placeholder="Ex.: Treino A — Peito e tríceps">
+              </div>
+
+              <div class="form-field">
+                <label for="workout-student">Aluno destinatário</label>
+                <select id="workout-student">
+                  <option value="">Selecione um aluno</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="workout-day">Dia recomendado</label>
+                <select id="workout-day">
+                  <option value="">Sem dia definido</option>
+                  <option value="segunda">Segunda-feira</option>
+                  <option value="terca">Terça-feira</option>
+                  <option value="quarta">Quarta-feira</option>
+                  <option value="quinta">Quinta-feira</option>
+                  <option value="sexta">Sexta-feira</option>
+                  <option value="sabado">Sábado</option>
+                  <option value="domingo">Domingo</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="workout-description">Orientações gerais</label>
+                <textarea id="workout-description" rows="3"
+                  maxlength="1500"
+                  placeholder="Objetivo, intensidade e orientações do treino"></textarea>
+              </div>
+            </div>
+
+            <div class="card-heading exercise-heading">
+              <div>
+                <h3>🏋️ Exercícios</h3>
+                <p>Adicione quantos exercícios precisar.</p>
+              </div>
+            </div>
+
+            <div id="exercise-list"></div>
+
+            <button id="add-exercise" type="button" class="outline-btn">
+              ➕ Adicionar exercício
+            </button>
+
+            <div class="form-actions">
+              <button id="save-draft" type="submit" class="secondary-btn">
+                💾 Salvar rascunho
+              </button>
+              <button id="publish" type="button" class="primary-btn">
+                🚀 Publicar para o aluno
+              </button>
+              <button id="clear-form" type="button" class="outline-btn">
+                Limpar formulário
+              </button>
+            </div>
+
+            <p id="form-message" class="status-message" role="status"></p>
+          </form>
+        </section>
+
+        <section id="tab-workouts" class="tab">
+          <div class="section-heading">
+            <div>
+              <h2>🏋️ Meus treinos</h2>
+              <p>Consulte, edite, publique ou exclua suas fichas.</p>
+            </div>
+            <button id="new-workout" class="primary-btn">
+              ➕ Novo treino
+            </button>
+          </div>
+          <div id="workout-list" class="cards-list"></div>
+        </section>
+
+        <section id="tab-students" class="tab">
           <div class="section-heading">
             <div>
               <h2>👥 Meus alunos</h2>
-              <p>Visualize os alunos vinculados ao seu acompanhamento.</p>
+              <p>Alunos autorizados no Firebase.</p>
             </div>
           </div>
 
-          <div class="dashboard-card">
-            <div id="students-list" class="empty-state">
-              <span>👤</span>
-              <h3>Nenhum aluno carregado</h3>
-              <p>Os alunos autorizados aparecerão aqui.</p>
-            </div>
-          </div>
-        </section>
-
-        <section id="section-treinos" class="dashboard-section">
-          <div class="section-heading">
-            <div>
-              <h2>🏋️ Planejamento de treinos</h2>
-              <p>Organize os exercícios de cada dia da semana.</p>
-            </div>
-          </div>
-
-          <div class="workout-days">
-
-            <article class="workout-day-card">
-              <span>SEGUNDA-FEIRA</span>
-              <h3>Quadríceps</h3>
-              <p>Extensora, Smith, leg press, hack e complementares.</p>
-              <button type="button" data-day="segunda" class="workout-open">
-                Ver exercícios
-              </button>
-            </article>
-
-            <article class="workout-day-card">
-              <span>TERÇA-FEIRA</span>
-              <h3>Costas e bíceps</h3>
-              <p>Puxadas, remadas e exercícios de bíceps.</p>
-              <button type="button" data-day="terca" class="workout-open">
-                Ver exercícios
-              </button>
-            </article>
-
-            <article class="workout-day-card">
-              <span>QUARTA-FEIRA</span>
-              <h3>Posterior e glúteos</h3>
-              <p>Flexoras, stiff, elevação pélvica e complementares.</p>
-              <button type="button" data-day="quarta" class="workout-open">
-                Ver exercícios
-              </button>
-            </article>
-
-            <article class="workout-day-card">
-              <span>QUINTA-FEIRA</span>
-              <h3>Peito e tríceps</h3>
-              <p>Supinos, fly e exercícios de tríceps.</p>
-              <button type="button" data-day="quinta" class="workout-open">
-                Ver exercícios
-              </button>
-            </article>
-
-            <article class="workout-day-card">
-              <span>SEXTA-FEIRA</span>
-              <h3>Ombros e antebraço</h3>
-              <p>Desenvolvimento, elevações e exercícios de antebraço.</p>
-              <button type="button" data-day="sexta" class="workout-open">
-                Ver exercícios
-              </button>
-            </article>
-
-          </div>
-
-          <article id="workout-details" class="dashboard-card" hidden>
-            <div class="card-heading">
-              <h3 id="workout-details-title">Exercícios</h3>
-              <button id="close-workout" type="button">Fechar</button>
-            </div>
-            <div id="workout-exercises"></div>
+          <article class="panel-card">
+            <p class="muted">
+              Para adicionar um aluno, ele deve criar uma conta.
+              Depois, autorize seu UID no Firestore.
+            </p>
+            <div id="student-list" class="cards-list"></div>
           </article>
         </section>
 
-        <section id="section-evolucao" class="dashboard-section">
+        <section id="tab-history" class="tab">
+          <div class="section-heading">
+            <div>
+              <h2>📋 Histórico de treinos</h2>
+              <p>Veja os exercícios, as cargas e as repetições realizadas.</p>
+            </div>
+          </div>
+          <div id="log-list" class="cards-list"></div>
+        </section>
+
+        <section id="tab-progress" class="tab">
           <div class="section-heading">
             <div>
               <h2>📈 Evolução física</h2>
-              <p>Acompanhe mudanças de peso e desempenho.</p>
+              <p>Acompanhe peso corporal e desempenho dos alunos.</p>
             </div>
           </div>
 
-          <div class="dashboard-grid">
-
-            <article class="dashboard-card">
+          <div class="panel-grid">
+            <article class="panel-card">
               <h3>⚖️ Peso corporal</h3>
-              <div id="weight-chart" class="chart-placeholder">
-                <span>📊</span>
-                <p>Aguardando registros de peso.</p>
-              </div>
+              <div id="trainer-weight-chart" class="chart-area"></div>
             </article>
-
-            <article class="dashboard-card">
-              <h3>🏋️ Evolução de cargas</h3>
-              <div id="strength-chart" class="chart-placeholder">
-                <span>📈</span>
-                <p>Aguardando registros de exercícios.</p>
-              </div>
+            <article class="panel-card">
+              <h3>💪 Carga máxima registrada</h3>
+              <div id="trainer-strength-chart" class="chart-area"></div>
             </article>
-
           </div>
+          <div id="measurement-list" class="cards-list"></div>
         </section>
 
-        <section id="section-historico" class="dashboard-section">
+        <section id="tab-profile" class="tab">
           <div class="section-heading">
-            <div>
-              <h2>📅 Histórico de treinos</h2>
-              <p>Consulte os treinos realizados e suas cargas.</p>
-            </div>
+            <h2>⚙️ Meu perfil</h2>
           </div>
-
-          <article class="dashboard-card">
-            <div id="history-list" class="empty-state">
-              <span>🗓️</span>
-              <h3>Nenhum treino registrado</h3>
-              <p>O histórico aparecerá após os primeiros treinos.</p>
-            </div>
-          </article>
-        </section>
-
-        <section id="section-perfil" class="dashboard-section">
-          <div class="section-heading">
-            <div>
-              <h2>⚙️ Meu perfil</h2>
-              <p>Informações da sua conta de treinador.</p>
-            </div>
-          </div>
-
-          <article class="dashboard-card profile-card">
+          <article class="panel-card profile-card">
             <div class="profile-avatar">💪</div>
             <h3 id="profile-name">Treinador</h3>
-            <p id="profile-email">Carregando...</p>
-            <span class="profile-role">Conta de treinador</span>
+            <p id="profile-email"></p>
+            <span class="role-pill">Conta de treinador</span>
           </article>
         </section>
-
       </main>
 
-      <footer class="dashboard-footer">
-        <p>© 2026 Evolve Fit • Evolua todos os dias 💙</p>
+      <footer class="site-footer">
+        © 2026 Evolve Fit • Evolua todos os dias 💙
       </footer>
-
     </div>
   </div>
 
-  <link rel="stylesheet" href="treinador.css">
   <script type="module" src="treinador.js"></script>
 </body>
-  </html>
-  
+</html>
