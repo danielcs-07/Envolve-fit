@@ -116,7 +116,7 @@ form.addEventListener("submit", async (event) => {
     }
 
     if (profile.role === "trainer") {
-      showMessage("Login realizado! Bem-vindo, treinador.");
+  window.location.replace("treinador.html");
     } else if (profile.role === "student") {
       showMessage("Login realizado! Bem-vindo, aluno.");
     } else {
