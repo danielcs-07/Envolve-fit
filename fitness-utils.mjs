@@ -87,3 +87,11 @@ export function uniqueExercises(logs) {
     (log.exercises || []).map(ex => String(ex.name || "").trim()).filter(Boolean)
   ))].sort((a,b) => a.localeCompare(b, "pt-BR"));
 }
+
+export function compareWorkoutDays(a, b) {
+  const rank = day => {
+    const index = WEEK_DAYS.findIndex(item => item.key === normalizeDay(day));
+    return index < 0 ? WEEK_DAYS.length : index;
+  };
+  return rank(a.day) - rank(b.day);
+}

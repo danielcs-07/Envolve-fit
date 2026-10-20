@@ -18,9 +18,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
-  WEEK_DAYS, normalizeDay, localDay, weekDates, timestampDate,
+  WEEK_DAYS, normalizeDay, localDay, weekDates, timestampDate, compareWorkoutDays,
   recentLogs, numberOfSeries, trainingVolume, bestSetProgress, uniqueExercises
-} from "./fitness-utils.mjs";
+} from "./fitness-utils.mjs?v=20261020-order";
 
 const $ = id => document.getElementById(id);
 
@@ -560,6 +560,8 @@ async function refreshData() {
       id: snapshot.id,
       ...snapshot.data()
     }));
+
+  workouts.sort(compareWorkoutDays);
 
   logs = logSnap.docs
     .map(snapshot => ({

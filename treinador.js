@@ -20,9 +20,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
-  WEEK_DAYS, normalizeDay, timestampDate, recentLogs,
+  WEEK_DAYS, normalizeDay, timestampDate, recentLogs, compareWorkoutDays,
   numberOfSeries, trainingVolume, uniqueExercises, bestSetProgress
-} from "./fitness-utils.mjs";
+} from "./fitness-utils.mjs?v=20261020-order";
 
 import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
@@ -727,6 +727,7 @@ async function refreshData() {
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
     .filter(item => students.some(student => student.id === item.studentId));
 
+  workouts.sort(compareWorkoutDays);
   renderStudents();
   renderWorkouts();
   renderLogs();
