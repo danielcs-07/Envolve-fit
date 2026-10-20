@@ -456,3 +456,44 @@
     transform: none;
   }
 }
+
+#training-exercises .series-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+#training-exercises .series-row {
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 8px;
+  padding: 10px;
+}
+#training-exercises .series-row > strong {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  font-size: 12px;
+}
+#training-exercises .series-input {
+  grid-row: 2;
+  min-width: 0;
+  gap: 3px;
+}
+#training-exercises .series-input input {
+  min-height: 44px;
+  padding: 8px 6px;
+  font-size: 16px;
+}
+#training-exercises .set-check {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  gap: 4px;
+  padding: 4px;
+  min-height: 32px;
+  font-size: 10px;
+}
+@media (max-width: 380px) {
+  #training-exercises .series-grid { gap: 6px; }
+  #training-exercises .series-row { padding: 8px; gap: 6px; }
+  #training-exercises .training-exercise { padding: 12px; }
+}

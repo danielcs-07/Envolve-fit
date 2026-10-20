@@ -267,7 +267,7 @@ function startWorkout(workout) {
       row.append(make("strong", "", `Série ${i + 1}`));
 
       const weightLabel = make("label", "series-input");
-      weightLabel.append(make("span", "", "Carga (kg)"));
+      weightLabel.append(make("span", "", "Kg"));
 
       const weight = document.createElement("input");
       weight.type = "number";
@@ -276,6 +276,7 @@ function startWorkout(workout) {
       weight.step = "0.5";
       weight.placeholder = "0";
       weight.dataset.type = "weight";
+      weight.setAttribute("aria-label", `Carga em kg da série ${i + 1} de ${exercise.name}`);
       weight.inputMode = "decimal";
       const previous = (previousLog?.exercises || [])
         .find(ex => String(ex.name).trim().toLowerCase() === String(exercise.name).trim().toLowerCase());
@@ -284,7 +285,7 @@ function startWorkout(workout) {
       weightLabel.append(weight);
 
       const repsLabel = make("label", "series-input");
-      repsLabel.append(make("span", "", "Repetições"));
+      repsLabel.append(make("span", "", "Reps"));
 
       const reps = document.createElement("input");
       reps.type = "number";
@@ -293,6 +294,7 @@ function startWorkout(workout) {
       reps.step = "1";
       reps.placeholder = "12";
       reps.dataset.type = "reps";
+      reps.setAttribute("aria-label", `Repetições da série ${i + 1} de ${exercise.name}`);
       reps.inputMode = "numeric";
       if (oldSeries?.reps != null) reps.value = oldSeries.reps;
       repsLabel.append(reps);
