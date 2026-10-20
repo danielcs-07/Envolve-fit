@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <title>Meus Treinos | Evolve Fit</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-page">
+
+  <div id="loading" class="loading">
+    <div class="loading-icon">💪</div>
+    <h2>Evolve Fit</h2>
+    <p>Carregando seus treinos...</p>
+  </div>
+
+  <div id="app" class="app-layout" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">💪</div>
+        <div>
+          <h2>Evolve Fit</h2>
+          <small>Área do aluno</small>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">
+          🏠 Início
+        </button>
+        <button class="nav-item" data-tab="workouts">
+          🏋️ Meus treinos
+        </button>
+        <button class="nav-item" data-tab="history">
+          📋 Histórico
+        </button>
+        <button class="nav-item" data-tab="progress">
+          📈 Minha evolução
+        </button>
+        <button class="nav-item" data-tab="profile">
+          👤 Meu perfil
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <p>Seu progresso começa hoje.</p>
+        <button id="logout" class="logout-btn">
+          🚪 Sair da conta
+        </button>
+      </div>
+    </aside>
+
+    <div class="content-area">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">MINHA ÁREA</p>
+          <h1 id="page-title">Início</h1>
+        </div>
+        <div class="topbar-user">
+          <span class="role-pill">Aluno</span>
+          <span id="avatar" class="avatar">A</span>
+        </div>
+      </header>
+
+      <main class="main-content">
+
+        <section id="tab-dashboard" class="tab active">
+          <div class="hero">
+            <div>
+              <span class="hero-tag">VAMOS EVOLUIR</span>
+              <h2>Olá, <span id="welcome-name">aluno</span>! 💪</h2>
+              <p>
+                Cada repetição conta. Registre seus treinos
+                e acompanhe sua evolução.
+              </p>
+              <button id="go-workouts" class="hero-button">
+                🏋️ Ver meus treinos
+              </button>
+            </div>
+            <div class="hero-art">🔥</div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-icon">🏋️</span>
+              <p>Treinos disponíveis</p>
+              <strong id="stat-workouts">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span class="stat-icon">✅</span>
+              <p>Treinos concluídos</p>
+              <strong id="stat-completed">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span class="stat-icon">⚖️</span>
+              <p>Último peso</p>
+              <strong id="stat-weight">—</strong>
+            </article>
+
+            <article class="stat-card">
+              <span class="stat-icon">📈</span>
+              <p>Registros de peso</p>
+              <strong id="stat-measurements">0</strong>
+            </article>
+          </div>
+
+          <article class="panel-card">
+            <h3>📅 Seus próximos treinos</h3>
+            <div id="upcoming-workouts"></div>
+          </article>
+        </section>
+
+        <section id="tab-workouts" class="tab">
+          <div class="section-heading">
+            <h2>🏋️ Meus treinos</h2>
+            <p>Escolha uma ficha para começar.</p>
+          </div>
+
+          <div id="student-workout-list" class="cards-list"></div>
+
+          <article id="active-workout" class="panel-card" hidden>
+            <div class="card-heading">
+              <div>
+                <h2 id="active-workout-name"></h2>
+                <p id="active-workout-description"></p>
+              </div>
+              <button id="close-workout" class="outline-btn">
+                Fechar
+              </button>
+            </div>
+
+            <form id="training-form">
+              <div id="training-exercises"></div>
+              <button id="finish-workout" class="primary-btn" type="submit">
+                ✅ Concluir e salvar treino
+              </button>
+              <p id="training-message" role="status"></p>
+            </form>
+          </article>
+        </section>
+
+        <section id="tab-history" class="tab">
+          <div class="section-heading">
+            <h2>📋 Histórico</h2>
+            <p>Veja seus treinos realizados.</p>
+          </div>
+          <div id="student-history" class="cards-list"></div>
+        </section>
+
+        <section id="tab-progress" class="tab">
+          <div class="section-heading">
+            <h2>📈 Minha evolução</h2>
+            <p>Registre seu peso e acompanhe seus resultados.</p>
+          </div>
+
+          <article class="panel-card">
+            <h3>⚖️ Registrar medidas</h3>
+            <form id="measurement-form" class="form-grid">
+              <div class="form-field">
+                <label for="body-weight">Peso corporal (kg)</label>
+                <input id="body-weight" type="number"
+                  min="1" max="500" step="0.1" required
+                  placeholder="Ex.: 70.5">
+              </div>
+
+              <div class="form-field">
+                <label for="body-height">Altura (cm)</label>
+                <input id="body-height" type="number"
+                  min="50" max="250" step="0.1" required
+                  placeholder="Ex.: 170">
+              </div>
+
+              <button type="submit" class="primary-btn">
+                💾 Salvar medidas
+              </button>
+            </form>
+            <p id="measurement-message" role="status"></p>
+          </article>
+
+          <div class="panel-grid">
+            <article class="panel-card">
+              <h3>⚖️ Histórico de peso</h3>
+              <div id="student-weight-chart" class="chart-area"></div>
+            </article>
+
+            <article class="panel-card">
+              <h3>🏋️ Cargas registradas</h3>
+              <div id="student-strength-chart" class="chart-area"></div>
+            </article>
+          </div>
+
+          <div id="student-measurements" class="cards-list"></div>
+        </section>
+
+        <section id="tab-profile" class="tab">
+          <div class="section-heading">
+            <h2>👤 Meu perfil</h2>
+          </div>
+          <article class="panel-card profile-card">
+            <div class="profile-avatar">💪</div>
+            <h3 id="profile-name">Aluno</h3>
+            <p id="profile-email"></p>
+            <span class="role-pill">Conta de aluno</span>
+          </article>
+        </section>
+
+      </main>
+
+      <footer class="site-footer">
+        © 2026 Evolve Fit • Um treino de cada vez 💙
+      </footer>
+    </div>
+  </div>
+
+  <script type="module" src="aluno.js"></script>
+</body>
+</html>
