@@ -105,13 +105,25 @@
             </article>
 
             <article class="stat-card">
-              <span class="stat-icon">📈</span>
-              <p>Registros de peso</p>
-              <strong id="stat-measurements">0</strong>
+              <span class="stat-icon">🔥</span>
+              <p>Consistência · 4 semanas</p>
+              <strong id="stat-consistency">0/4</strong>
+              <small>Semanas com treino salvo</small>
             </article>
           </div>
 
           <section class="dashboard-workout-highlight" id="student-today-feature" aria-live="polite"></section>
+
+          <article class="panel-card pr-section">
+            <div class="card-heading">
+              <div>
+                <h3>🏆 Seus recordes pessoais</h3>
+                <p class="muted">Maior carga por exercício, com repetições e dia da ficha.</p>
+              </div>
+              <button type="button" class="outline-btn" id="go-pr-records">Ver todos</button>
+            </div>
+            <div id="student-pr-dashboard"></div>
+          </article>
 
           <article class="panel-card weekly-panel">
             <div class="card-heading">
@@ -226,6 +238,20 @@
           </article>
 
           <div id="student-progress-summary" class="mini-stats-grid"></div>
+          <p class="muted progress-explainer">
+            Consistência: semanas com pelo menos um treino salvo nas últimas quatro semanas, incluindo esta.
+            Treinos registrados incluem sessões parciais salvas.
+          </p>
+
+          <article id="student-pr-section" class="panel-card pr-section">
+            <div class="card-heading">
+              <div>
+                <h3>🏆 Recordes pessoais (PR) por exercício</h3>
+                <p class="muted">Maior carga registrada e suas repetições. O ganho em kg compara com o PR de carga anterior; a primeira sessão é a referência.</p>
+              </div>
+            </div>
+            <div id="student-pr-records"></div>
+          </article>
           <div class="panel-grid">
             <article class="panel-card">
               <h3>⚖️ Histórico de peso</h3>
@@ -266,7 +292,7 @@
     </div>
   </div>
 
-  <script type="module" src="aluno.js?v=20261020-videos"></script>
+  <script type="module" src="aluno.js?v=20261021-recordes-consistencia"></script>
   <script defer src="pwa.js"></script>
 </body>
 </html>
