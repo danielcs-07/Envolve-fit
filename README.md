@@ -30,6 +30,15 @@ Plataforma de acompanhamento de treino e evolução para **um treinador** e seus
 
 As fichas com um dia da semana aparecem na agenda. Fichas sem dia específico continuam disponíveis como treinos livres.
 
+## Recuperação de rascunhos ao alternar aplicativos
+
+- **Aluno:** cargas, repetições, séries marcadas e fim previsto do descanso ficam salvos automaticamente **no armazenamento deste aparelho e navegador**, separados pela conta e pela ficha. Ao recarregar a página, o treino que estava aberto reaparece com o preenchimento recuperado. Fechar o painel não apaga o rascunho; o botão **Descartar rascunho** permite apagá-lo.
+- **Treinador:** o criador de fichas recupera campos, exercícios, links de vídeos e observações que ainda não foram salvos no Firebase. Trocar de tela não descarta as edições. Criar outro treino ou limpar a ficha pode pedir confirmação.
+- Medidas corporais ainda não enviadas também podem ser recuperadas no formulário do aluno.
+- Esses dados são **locais**, não são um backup na nuvem. Expiram após sete dias sem alteração e são apagados ao sair da conta no aplicativo. Evite dispositivos compartilhados.
+- Se o navegador bloquear ou limpar os dados do site, ou se você trocar de aparelho, o rascunho local poderá não estar disponível. O Android pode suspender a aplicação em segundo plano; o aplicativo recupera o preenchimento quando a página volta a carregar, mas não executa treinos no servidor durante a suspensão.
+- Somente tocar em **Concluir e salvar treino** ou **Salvar/Publicar ficha** envia as alterações ao Firebase.
+
 ## Instalação no celular
 Em navegadores compatíveis com aplicativos web instaláveis, use **Instalar Evolve Fit** quando a opção aparecer, ou abra o menu do navegador e escolha **Adicionar à tela inicial**. A instalação depende do suporte do navegador e do aparelho.
 
