@@ -59,6 +59,9 @@ export function removeDraft(storage, key) {
 
 export function clearUserDrafts(storage, role, uid) {
   try {
+    if (!storage || !Number.isInteger(storage.length) || typeof storage.key !== "function") {
+      return false;
+    }
     const prefix = draftKey(role, uid, "all").slice(0, -"all".length);
     for (let i = storage.length - 1; i >= 0; i--) {
       const key = storage.key(i);
