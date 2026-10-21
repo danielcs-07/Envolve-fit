@@ -972,6 +972,7 @@ $("student-password-reset").addEventListener("click", async () => {
 
 $("logout").onclick = async () => {
   if (currentUser) clearUserDrafts(localStore(), "student", currentUser.uid);
+  currentUser = null;
   await signOut(auth);
   location.replace("index.html");
 };
