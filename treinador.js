@@ -27,6 +27,7 @@ import {
 import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
 import { FIVE_DAY_PLAN, FIVE_DAY_PLAN_ID } from "./treino-cinco-dias.mjs";
+import { FELIPE_MALE_PLAN, FELIPE_MALE_PLAN_ID } from "./treino-masculino-felipe.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -734,6 +735,7 @@ async function refreshData() {
   workouts.sort(compareWorkoutDays);
   renderStudents();
   renderFiveDayStudents();
+  renderFelipePlan();
   renderWorkouts();
   renderLogs();
   renderProgress();
@@ -898,6 +900,173 @@ fiveDayButton.onclick = async () => {
     publishingFiveDays = false;
     fiveDaySelect.disabled = false;
     fiveDayButton.disabled = !fiveDaySelect.value;
+  }
+};
+
+
+const felipePanel = element("section", "panel-card");
+felipePanel.id = "felipe-masculino";
+const felipeHeading = element("h3", "", "🏋️ Plano masculino — Felipe Gutierres");
+const felipeDescription = element("p", "muted",
+  "Seis treinos de segunda a sábado, conforme o plano masculino original. " +
+  "Todos os 29 exercícios têm vídeo de demonstração. " +
+  "Esse envio não altera o plano de cinco dias da Vitória.");
+const felipeMessage = element("p", "status-message",
+  "Verificando se Felipe Gutierres está cadastrado e aprovado...");
+felipeMessage.setAttribute("role", "status");
+const felipePreview = document.createElement("details");
+const felipePreviewTitle = element("summary", "", "Conferir divisão e exercícios");
+felipePreview.append(felipePreviewTitle);
+FELIPE_MALE_PLAN.forEach(workout => {
+  const group = element("div", "log-exercise");
+  group.append(element("strong", "", workout.name));
+  const videoList = document.createElement("ul");
+  workout.exercises.forEach(exercise => {
+    const item = document.createElement("li");
+    const link = element("a", "", "▶ " + exercise.name);
+    link.href = exercise.video;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    item.append(link);
+    videoList.append(item);
+  });
+  group.append(videoList);
+  felipePreview.append(group);
+});
+const felipePublishButton = element("button", "primary-btn",
+  "Publicar os 6 treinos para Felipe Gutierres");
+felipePublishButton.type = "button";
+felipePublishButton.disabled = true;
+felipePanel.append(felipeHeading, felipeDescription, felipePreview,
+  felipePublishButton, felipeMessage);
+const felipeSection = $("tab-students");
+const felipeExistingPanel = felipeSection.querySelector(".panel-card");
+felipeSection.insertBefore(felipePanel, felipeExistingPanel);
+
+function normalizedStudentName(name) {
+  return String(name || "").normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR")
+    .trim().replace(/\s+/g, " ");
+}
+
+function felipeMatches(entries) {
+  return entries.filter(student =>
+    student.role === "student" &&
+    normalizedStudentName(student.name) === "felipe gutierres");
+}
+
+let publishingFelipe = false;
+
+function renderFelipePlan() {
+  const candidates = felipeMatches(students);
+  felipePublishButton.disabled = publishingFelipe || candidates.length !== 1;
+  if (publishingFelipe) return;
+  if (!candidates.length) {
+    felipeMessage.textContent = "Felipe Gutierres ainda não aparece como aluno ativo. " +
+      "Se o cadastro for novo, aprove-o em Cadastros pendentes e atualize o painel.";
+  } else if (candidates.length > 1) {
+    felipeMessage.textContent = "Há mais de uma conta ativa com esse nome. " +
+      "Confirme os perfis antes de publicar para não entregar a ficha à pessoa errada.";
+  } else {
+    const student = candidates[0];
+    const count = workouts.filter(workout =>
+      workout.studentId === student.id &&
+      workout.trainerId === currentUser?.uid &&
+      workout.status === "published" &&
+      String(workout.id).startsWith(
+        `male-plan-${FELIPE_MALE_PLAN_ID}-${currentUser.uid}-${student.id}-`
+      )
+    ).length;
+    felipeMessage.textContent = count === FELIPE_MALE_PLAN.length
+      ? "Os seis treinos masculinos já estão publicados para Felipe Gutierres."
+      : `Perfil ativo localizado: ${student.name} (${student.email || "sem e-mail visível"}). ` +
+        `Fichas deste plano já publicadas: ${count} de ${FELIPE_MALE_PLAN.length}.`;
+  }
+}
+
+felipePublishButton.onclick = async () => {
+  if (publishingFelipe || !currentUser) return;
+  const matches = felipeMatches(students);
+  if (matches.length !== 1) {
+    felipeMessage.textContent = "Não foi possível identificar uma única conta ativa do Felipe. Atualize o painel.";
+    return;
+  }
+  const student = matches[0];
+  if (!confirm(
+    `Publicar as ${FELIPE_MALE_PLAN.length} fichas masculinas para ${student.name} ` +
+    `(${student.email || student.id})? Nenhuma ficha da Vitória será alterada.`
+  )) return;
+
+  publishingFelipe = true;
+  felipePublishButton.disabled = true;
+  felipeMessage.textContent = "Verificando a conta e preparando as fichas do Felipe...";
+  try {
+    const userSnap = await getDoc(doc(db, "users", student.id));
+    if (!userSnap.exists() || userSnap.data().role !== "student" ||
+        userSnap.data().active !== true ||
+        normalizedStudentName(userSnap.data().name) !== "felipe gutierres") {
+      throw new Error("O perfil do Felipe está inativo ou foi alterado. Atualize o painel.");
+    }
+
+    const workoutSnap = await getDocs(collection(db, "workouts"));
+    const existing = new Map(workoutSnap.docs.map(item => [item.id, item.data()]));
+    const batch = writeBatch(db);
+    const expectedIds = [];
+    let added = 0;
+
+    for (const workout of FELIPE_MALE_PLAN) {
+      const id = `male-plan-${FELIPE_MALE_PLAN_ID}-${currentUser.uid}-${student.id}-${workout.day}`;
+      expectedIds.push(id);
+      if (existing.has(id)) {
+        const saved = existing.get(id);
+        if (saved.studentId !== student.id ||
+            saved.trainerId !== currentUser.uid ||
+            saved.status !== "published") {
+          throw new Error("Uma ficha já existe com identificação incompatível. " +
+            "Nenhuma ficha será sobrescrita.");
+        }
+        continue;
+      }
+      batch.set(doc(db, "workouts", id), {
+        ...workout,
+        trainerId: currentUser.uid,
+        studentId: student.id,
+        status: "published",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      added++;
+    }
+
+    if (added) await batch.commit();
+    await refreshData();
+
+    if (!expectedIds.every(id => workouts.some(workout =>
+      workout.id === id &&
+      workout.studentId === student.id &&
+      workout.trainerId === currentUser.uid &&
+      workout.status === "published"
+    ))) {
+      throw new Error("Não foi possível confirmar todas as fichas. Atualize a lista de treinos.");
+    }
+
+    felipeMessage.textContent = added
+      ? `✅ ${FELIPE_MALE_PLAN.length} treinos publicados exclusivamente para ${student.name}! ` +
+        "Acesse Meus treinos para conferi-los."
+      : "✅ Os seis treinos já estavam publicados para Felipe. Nenhuma ficha foi duplicada.";
+    $("trainer-workout-search").value = "";
+    $("trainer-workout-status").value = "published";
+    $("trainer-workout-student").value = student.id;
+    renderWorkouts();
+  } catch (error) {
+    console.error("Falha ao publicar o treino masculino do Felipe:", error);
+    felipeMessage.textContent = `Não foi possível concluir: ${error.code || error.message}. ` +
+      "Nenhum treino da Vitória foi alterado.";
+  } finally {
+    publishingFelipe = false;
+    felipePublishButton.disabled = false;
+    // Os dados atualizados são usados para evitar outra publicação por engano.
+    renderFelipePlan();
   }
 };
 
