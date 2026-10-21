@@ -1029,8 +1029,12 @@ felipePublishButton.onclick = async () => {
         }
 
         // Nunca reescrever os demais dias: só atualizar a quinta do Felipe.
+        const signature = exercises => JSON.stringify((exercises || []).map(exercise => [
+          exercise.name, exercise.sets, exercise.reps, exercise.rest,
+          exercise.video || "", exercise.notes || "", exercise.videoAlternative || ""
+        ]));
         if (workout.day === "quinta" &&
-            (JSON.stringify(saved.exercises) !== JSON.stringify(workout.exercises) ||
+            (signature(saved.exercises) !== signature(workout.exercises) ||
              saved.description !== workout.description)) {
           batch.update(doc(db, "workouts", id), {
             exercises: workout.exercises,
