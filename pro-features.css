@@ -497,3 +497,121 @@
   #training-exercises .series-row { padding: 8px; gap: 6px; }
   #training-exercises .training-exercise { padding: 12px; }
 }
+
+
+/* Recordes pessoais: carga mais alta por exercício, com contexto e progresso real. */
+.pr-section {
+  margin-bottom: 22px;
+}
+.pr-section .card-heading {
+  gap: 12px;
+}
+.pr-section .card-heading h3 {
+  margin: 0 0 5px;
+}
+.pr-section .card-heading .muted {
+  margin: 4px 0 0;
+}
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.pr-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-width: 0;
+  padding: 18px 19px;
+  border: 1px solid #d9e8cf;
+  border-radius: 17px;
+  background: linear-gradient(140deg, #fbfff7, #f2f9e9);
+}
+.pr-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pr-card h4 {
+  margin: 0;
+  color: #203b2b;
+  font-size: clamp(14px, 1.5vw, 17px);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.pr-day {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 750;
+  color: #4b7145;
+  background: #e6f3da;
+  border-radius: 25px;
+  padding: 5px 9px;
+}
+.pr-card .pr-best {
+  color: #143d23;
+  font: 850 clamp(18px, 2.1vw, 24px) 'Outfit', Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+.pr-changes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.pr-gain, .pr-baseline {
+  font-size: 11px;
+  font-weight: 750;
+  border-radius: 9px;
+  padding: 7px 9px;
+  white-space: normal;
+}
+.pr-gain {
+  color: #315d2f;
+  background: #daf1c8;
+}
+.pr-baseline {
+  color: #526753;
+  background: #e8efe6;
+}
+.pr-date {
+  margin: auto 0 0;
+  color: #607765;
+  font-size: 11px;
+}
+.pr-more {
+  margin-top: 13px;
+}
+.pr-more > summary {
+  list-style-position: inside;
+  width: fit-content;
+  border: 1px solid #cdddbc;
+  padding: 11px 15px;
+  border-radius: 11px;
+  color: #31572a;
+  background: #f1f9e8;
+  font-weight: 750;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pr-more > .pr-grid {
+  margin-top: 13px;
+}
+.progress-explainer {
+  margin: -8px 0 19px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+#student-pr-dashboard .pr-grid {
+  margin-top: 4px;
+}
+@media (max-width: 640px) {
+  .pr-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pr-card {
+    padding: 16px;
+  }
+  .pr-section .card-heading {
+    flex-wrap: wrap;
+  }
+}
