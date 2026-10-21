@@ -19,8 +19,11 @@ import {
 
 import {
   WEEK_DAYS, normalizeDay, localDay, weekDates, timestampDate, compareWorkoutDays,
-  recentLogs, numberOfSeries, trainingVolume, bestSetProgress, uniqueExercises
-} from "./fitness-utils.mjs?v=20261020-order";
+  recentLogs, numberOfSeries, recordedSeriesCount, trainingConsistency,
+  personalRecords, bestSetProgress, uniqueExercises
+} from "./fitness-utils.mjs?v=20261021-pr-consistency";
+
+import { renderPRList } from "./pr-ui.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -430,9 +433,10 @@ function renderHistory() {
     const info = make("div");
     info.append(make("h3", "", log.workoutName || "Treino"));
     info.append(make("p", "muted", dateText(log.createdAt)));
-    const total = trainingVolume(log);
-    const volume = make("span", "volume-pill", `${ptNumber(total, 1)} kg de volume`);
-    heading.append(info, volume);
+    const seriesCount = recordedSeriesCount(log);
+    const indicator = make("span", "volume-pill",
+      `${seriesCount} ${seriesCount === 1 ? "série registrada" : "séries registradas"}`);
+    heading.append(info, indicator);
     card.append(heading);
 
     (log.exercises || []).forEach(exercise => {
@@ -512,12 +516,18 @@ function renderProgress() {
   $("stat-weight").textContent = latest ? `${latest.weight} kg` : "—";
   $("stat-measurements").textContent = measurements.length;
 
+  const consistency = trainingConsistency(logs);
+  const records = personalRecords(logs, workouts);
+  $("stat-consistency").textContent =
+    consistency.activeWeeks + "/" + consistency.totalWeeks;
+
   const summary = $("student-progress-summary");
   summary.replaceChildren();
   const cards = [
-    ["📅", "Treinos nos últimos 7 dias", String(recentLogs(logs).length)],
-    ["🏋️", "Volume total registrado", `${ptNumber(logs.reduce((n, item) => n + trainingVolume(item), 0), 1)} kg`],
-    ["📊", "Exercícios registrados", String(names.length)]
+    ["✅", "Treinos registrados", String(logs.length)],
+    ["🔥", "Consistência (últimas 4 semanas)",
+      consistency.activeWeeks + "/" + consistency.totalWeeks + " semanas"],
+    ["🏆", "Exercícios com PR de carga", String(records.length)]
   ];
   cards.forEach(([icon, title, value]) => {
     const card = make("div", "mini-stat");
@@ -528,6 +538,9 @@ function renderProgress() {
     );
     summary.append(card);
   });
+
+  renderPRList($("student-pr-dashboard"), records, 3);
+  renderPRList($("student-pr-records"), records, 8);
 
   const list = $("student-measurements");
   list.replaceChildren();
