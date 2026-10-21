@@ -19,7 +19,7 @@ import {
 
 import {
   WEEK_DAYS, normalizeDay, localDay, weekDates, timestampDate, compareWorkoutDays,
-  recentLogs, numberOfSeries, recordedSeriesCount, trainingConsistency,
+  numberOfSeries, recordedSeriesCount, trainingConsistency,
   personalRecords, bestSetProgress, uniqueExercises
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
@@ -69,6 +69,10 @@ document.querySelectorAll(".nav-item").forEach(button => {
 });
 
 $("go-workouts").onclick = () => showTab("workouts");
+$("go-pr-records").onclick = () => {
+  showTab("progress");
+  $("student-pr-section").scrollIntoView({ behavior: "smooth", block: "start" });
+};
 
 function youtubeId(url) {
   if (!url) return "";
@@ -514,7 +518,6 @@ function renderProgress() {
 
   const latest = sorted.at(-1);
   $("stat-weight").textContent = latest ? `${latest.weight} kg` : "—";
-  $("stat-measurements").textContent = measurements.length;
 
   const consistency = trainingConsistency(logs);
   const records = personalRecords(logs, workouts);
