@@ -26,6 +26,9 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import {
+  draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
+} from "./draft-storage.mjs";
 
 import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
@@ -39,6 +42,98 @@ let workouts = [];
 let logs = [];
 let measurements = [];
 let busy = false;
+let trainerFormHasEdits = false;
+let trainerSessionRecovered = false;
+
+
+const trainerStore = () => {
+  try { return window.localStorage; } catch { return null; }
+};
+const trainerKey = kind => currentUser
+  ? draftKey("trainer", currentUser.uid, kind) : null;
+
+function rememberTrainerTab(tab) {
+  if (!currentUser) return;
+  writeDraft(trainerStore(), trainerKey("tab"), { tab });
+}
+
+function getRawEditorExercises() {
+  return [...document.querySelectorAll(".exercise-editor")].map(card => {
+    const field = name => card.querySelector('[data-field="' + name + '"]')?.value || "";
+    return {
+      name: field("name"), sets: field("sets"), reps: field("reps"),
+      rest: field("rest"), video: field("video"), notes: field("notes"),
+      videoAlternative: card.dataset.videoAlternative || ""
+    };
+  });
+}
+
+function saveTrainerDraft() {
+  if (!currentUser || !trainerFormHasEdits || busy) return false;
+  const data = {
+    editingId: $("editing-id").value,
+    name: $("workout-name").value,
+    studentId: $("workout-student").value,
+    day: $("workout-day").value,
+    description: $("workout-description").value,
+    exercises: getRawEditorExercises()
+  };
+  const saved = writeDraft(trainerStore(), trainerKey("workout-editor"), data);
+  $("trainer-draft-status").textContent = saved
+    ? "✓ Rascunho salvo automaticamente neste aparelho, ainda não enviado ao Firebase."
+    : "⚠️ Salvamento local indisponível. Salve a ficha antes de sair.";
+  return saved;
+}
+
+function markTrainerDraftChanged() {
+  if (!currentUser || busy) return;
+  trainerFormHasEdits = true;
+  saveTrainerDraft();
+}
+
+function restoreTrainerSession() {
+  if (!currentUser || trainerSessionRecovered) return;
+  trainerSessionRecovered = true;
+  const data = readDraft(trainerStore(), trainerKey("workout-editor"));
+  if (data && Array.isArray(data.exercises) && data.exercises.length <= 100) {
+    const existing = workouts.find(workout => workout.id === data.editingId);
+    $("editing-id").value = existing ? existing.id : "";
+    $("workout-name").value = typeof data.name === "string" ? data.name : "";
+    $("workout-description").value =
+      typeof data.description === "string" ? data.description : "";
+    $("workout-day").value = typeof data.day === "string" ? data.day : "";
+    if (students.some(student => student.id === data.studentId)) {
+      $("workout-student").value = data.studentId;
+    }
+    $("exercise-list").replaceChildren();
+    data.exercises.forEach(exercise => {
+      if (exercise && typeof exercise === "object") addExercise(exercise);
+    });
+    if (!data.exercises.length) addExercise();
+    trainerFormHasEdits = true;
+    $("trainer-draft-status").textContent = existing || !data.editingId
+      ? "✓ Sua ficha não publicada foi recuperada deste aparelho."
+      : "✓ Dados recuperados. Como a ficha antiga não existe mais, salve como uma nova.";
+  }
+  const tab = readDraft(trainerStore(), trainerKey("tab"))?.tab;
+  if (tab && Object.hasOwn(tabTitles, tab)) showTab(tab);
+}
+
+function confirmReplaceTrainerDraft() {
+  return !trainerFormHasEdits || confirm(
+    "Substituir o preenchimento atual? O rascunho local será descartado, mas fichas já salvas não mudam."
+  );
+}
+
+$("workout-form").addEventListener("input", markTrainerDraftChanged);
+$("workout-form").addEventListener("change", markTrainerDraftChanged);
+function saveTrainerOnBackground() {
+  if (currentUser) saveTrainerDraft();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) saveTrainerOnBackground();
+});
+window.addEventListener("pagehide", saveTrainerOnBackground);
 
 const tabTitles = {
   dashboard: "Visão geral",
@@ -60,6 +155,7 @@ function showTab(name) {
   });
 
   $("page-title").textContent = tabTitles[name] || "Evolve Fit";
+  rememberTrainerTab(name);
   window.scrollTo(0, 0);
 }
 
@@ -69,6 +165,7 @@ document.querySelectorAll(".nav-item").forEach(button => {
 
 $("quick-create").onclick = () => showTab("create");
 $("new-workout").onclick = () => {
+  if (!confirmReplaceTrainerDraft()) return;
   clearForm();
   showTab("create");
 };
@@ -105,6 +202,7 @@ function addExercise(data = {}) {
   remove.onclick = () => {
     card.remove();
     renumberExercises();
+    markTrainerDraftChanged();
   };
 
   header.append(title, remove);
@@ -115,7 +213,7 @@ function addExercise(data = {}) {
   const name = inputField(
     "Nome do exercício *",
     "text",
-    data.name || "",
+    data.name ?? "",
     "Ex.: Supino reto"
   );
   name.input.required = true;
@@ -125,7 +223,7 @@ function addExercise(data = {}) {
   const sets = inputField(
     "Quantidade de séries",
     "number",
-    data.sets || 4
+    data.sets ?? 4
   );
   sets.input.min = 1;
   sets.input.max = 20;
@@ -135,7 +233,7 @@ function addExercise(data = {}) {
   const reps = inputField(
     "Repetições",
     "text",
-    data.reps || "12, 10, 8, 6",
+    data.reps ?? "12, 10, 8, 6",
     "Ex.: 12, 10, 8, 6"
   );
   reps.input.required = true;
@@ -154,7 +252,7 @@ function addExercise(data = {}) {
   const video = inputField(
     "Link do vídeo no YouTube",
     "url",
-    data.video || "",
+    data.video ?? "",
     "https://www.youtube.com/watch?v=..."
   );
   video.input.dataset.field = "video";
@@ -162,7 +260,7 @@ function addExercise(data = {}) {
   const notes = inputField(
     "Orientações do exercício",
     "textarea",
-    data.notes || "",
+    data.notes ?? "",
     "Postura, execução e cuidados"
   );
   notes.input.maxLength = 1500;
@@ -184,17 +282,29 @@ function renumberExercises() {
   });
 }
 
-$("add-exercise").onclick = () => addExercise();
+$("add-exercise").onclick = () => {
+  addExercise();
+  markTrainerDraftChanged();
+};
 
-function clearForm() {
+function clearForm({ preserveDraft = false } = {}) {
+  if (!preserveDraft && currentUser) {
+    removeDraft(trainerStore(), trainerKey("workout-editor"));
+  }
+  trainerFormHasEdits = false;
   $("workout-form").reset();
   $("editing-id").value = "";
   $("exercise-list").replaceChildren();
   $("form-message").textContent = "";
+  $("trainer-draft-status").textContent =
+    "As alterações nesta ficha serão salvas automaticamente neste aparelho.";
   addExercise();
 }
 
-$("clear-form").onclick = clearForm;
+$("clear-form").onclick = () => {
+  if (!confirmReplaceTrainerDraft()) return;
+  clearForm();
+};
 
 function getExerciseData() {
   return [...document.querySelectorAll(".exercise-editor")].map(card => {
@@ -281,6 +391,7 @@ async function saveWorkout(status) {
     return;
   }
 
+  saveTrainerDraft();
   busy = true;
   $("save-draft").disabled = true;
   $("publish").disabled = true;
@@ -341,6 +452,7 @@ $("publish").onclick = async () => {
 };
 
 function editWorkout(workout) {
+  if (!confirmReplaceTrainerDraft()) return false;
   clearForm();
 
   $("editing-id").value = workout.id;
@@ -352,7 +464,10 @@ function editWorkout(workout) {
   $("exercise-list").replaceChildren();
   workout.exercises.forEach(addExercise);
 
+  trainerFormHasEdits = true;
+  saveTrainerDraft();
   showTab("create");
+  return true;
 }
 
 async function removeWorkout(workout) {
@@ -421,10 +536,11 @@ function renderWorkouts() {
     remove.type = "button";
     edit.onclick = () => editWorkout(workout);
     duplicate.onclick = () => {
-      editWorkout(workout);
+      if (!editWorkout(workout)) return;
       $("editing-id").value = "";
       $("workout-name").value = `${workout.name} (cópia)`;
       $("form-message").textContent = "Cópia pronta para editar. Salve como rascunho ou publique para o aluno.";
+      saveTrainerDraft();
     };
     remove.onclick = () => removeWorkout(workout);
 
@@ -992,13 +1108,15 @@ onAuthStateChanged(auth, async user => {
     $("loading").hidden = true;
     $("app").hidden = false;
 
-    clearForm();
+    clearForm({ preserveDraft: true });
 
     try {
       await refreshData();
       await importWeeklyDrafts();
+      restoreTrainerSession();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
+      restoreTrainerSession();
       alert("Painel aberto, mas alguns dados não puderam ser carregados. Confira as regras do Firestore.");
     }
 
@@ -1068,6 +1186,8 @@ $("trainer-password-reset").addEventListener("click", async () => {
 });
 
 $("logout").onclick = async () => {
+  if (currentUser) clearUserDrafts(trainerStore(), "trainer", currentUser.uid);
+  currentUser = null;
   await signOut(auth);
   location.replace("index.html");
 };

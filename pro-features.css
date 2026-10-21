@@ -615,3 +615,37 @@
     flex-wrap: wrap;
   }
 }
+
+
+/* Rascunhos locais sobrevivem à suspensão/recriação da aba no celular. */
+.autosave-status {
+  color: #386347;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+.draft-top-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.draft-top-actions button {
+  min-width: 0;
+}
+#discard-workout-draft {
+  border-color: #d3daca;
+  background: transparent;
+  color: #5a685a;
+}
+@media (max-width: 480px) {
+  .draft-top-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .draft-top-actions button {
+    flex: 1 1 auto;
+  }
+}

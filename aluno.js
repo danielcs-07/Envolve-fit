@@ -24,6 +24,9 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import {
+  draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
+} from "./draft-storage.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -35,6 +38,135 @@ let selectedWorkout = null;
 let saving = false;
 let restInterval = null;
 let restRemaining = 0;
+let restDeadline = 0;
+let sessionRecovered = false;
+
+
+const localStore = () => {
+  try { return window.localStorage; } catch { return null; }
+};
+const studentKey = kind => currentUser
+  ? draftKey("student", currentUser.uid, kind) : null;
+const workoutKey = id => studentKey("workout-" + id);
+
+function rememberStudentTab(tab) {
+  if (!currentUser) return;
+  writeDraft(localStore(), studentKey("tab"), { tab });
+}
+
+function saveActiveWorkoutDraft() {
+  if (!currentUser || !selectedWorkout) return false;
+  const exercises = [...$("training-exercises").querySelectorAll(".series-grid")]
+    .map(group => {
+      const index = Number(group.dataset.exerciseIndex);
+      return {
+        name: selectedWorkout.exercises[index]?.name || "",
+        series: [...group.querySelectorAll(".series-row")].map(row => ({
+          weight: row.querySelector('[data-type="weight"]').value,
+          reps: row.querySelector('[data-type="reps"]').value,
+          done: row.querySelector('[data-type="done"]').checked
+        }))
+      };
+    });
+
+  const saved = writeDraft(localStore(), workoutKey(selectedWorkout.id), {
+    workoutId: selectedWorkout.id,
+    exercises,
+    restDeadline
+  });
+  $("student-draft-status").textContent = saved
+    ? "✓ Progresso salvo automaticamente neste aparelho. Conclua o treino para enviar ao treinador."
+    : "⚠️ O navegador não permitiu salvar o rascunho. Não feche esta página sem concluir.";
+  return saved;
+}
+
+function restoreWorkoutDraft(workout) {
+  const draft = readDraft(localStore(), workoutKey(workout.id));
+  if (!draft || draft.workoutId !== workout.id || !Array.isArray(draft.exercises)) return false;
+  let recovered = 0;
+
+  [...$("training-exercises").querySelectorAll(".series-grid")].forEach(group => {
+    const index = Number(group.dataset.exerciseIndex);
+    const expected = workout.exercises[index];
+    const stored = draft.exercises[index];
+    // Não encaixar cargas de outro exercício se a ficha foi modificada.
+    if (!expected || !stored || expected.name !== stored.name || !Array.isArray(stored.series)) return;
+    const rows = [...group.querySelectorAll(".series-row")];
+    rows.forEach((row, seriesIndex) => {
+      const series = stored.series[seriesIndex];
+      if (!series || typeof series !== "object") return;
+      const weight = row.querySelector('[data-type="weight"]');
+      const reps = row.querySelector('[data-type="reps"]');
+      const checked = row.querySelector('[data-type="done"]');
+      if (typeof series.weight === "string" && series.weight.length <= 20) weight.value = series.weight;
+      if (typeof series.reps === "string" && series.reps.length <= 20) reps.value = series.reps;
+      checked.checked = series.done === true;
+      recovered++;
+    });
+  });
+
+  if (!recovered) {
+    $("student-draft-status").textContent =
+      "Sua ficha mudou desde o último preenchimento. Nenhuma carga foi aplicada ao exercício errado.";
+    return false;
+  }
+  if (Number.isFinite(draft.restDeadline) && draft.restDeadline > Date.now()) {
+    startRestTimer(0, draft.restDeadline);
+  }
+  updateSetProgress();
+  $("student-draft-status").textContent =
+    "✓ Preenchimento recuperado deste aparelho: cargas, repetições e séries marcadas.";
+  return true;
+}
+
+function saveMeasurementDraft() {
+  if (!currentUser) return;
+  const weight = $("body-weight").value;
+  const height = $("body-height").value;
+  if (!weight && !height) {
+    removeDraft(localStore(), studentKey("measurements"));
+  } else {
+    writeDraft(localStore(), studentKey("measurements"), { weight, height });
+  }
+}
+
+function restoreStudentSession() {
+  if (!currentUser || sessionRecovered) return;
+  sessionRecovered = true;
+  const measurement = readDraft(localStore(), studentKey("measurements"));
+  if (measurement) {
+    if (typeof measurement.weight === "string") $("body-weight").value = measurement.weight;
+    if (typeof measurement.height === "string") $("body-height").value = measurement.height;
+  }
+
+  const pending = readDraft(localStore(), studentKey("active-workout"));
+  const active = pending?.workoutId &&
+    workouts.find(workout => workout.id === pending.workoutId);
+  if (active) {
+    // Retoma exatamente a ficha em andamento e mostra o preenchimento recuperado.
+    startWorkout(active);
+    return;
+  }
+  if (pending) removeDraft(localStore(), studentKey("active-workout"));
+  const tab = readDraft(localStore(), studentKey("tab"))?.tab;
+  if (tab && Object.hasOwn(tabTitles, tab)) showTab(tab);
+}
+
+$("training-exercises").addEventListener("input", saveActiveWorkoutDraft);
+$("training-exercises").addEventListener("change", saveActiveWorkoutDraft);
+$("measurement-form").addEventListener("input", saveMeasurementDraft);
+$("measurement-form").addEventListener("change", saveMeasurementDraft);
+
+function saveStudentFormsOnBackground() {
+  if (!currentUser) return;
+  if (selectedWorkout) saveActiveWorkoutDraft();
+  saveMeasurementDraft();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) saveStudentFormsOnBackground();
+  else if (restDeadline) updateRestCountdown();
+});
+window.addEventListener("pagehide", saveStudentFormsOnBackground);
 
 const tabTitles = {
   dashboard: "Início",
@@ -61,6 +193,7 @@ function showTab(tab) {
   });
 
   $("page-title").textContent = tabTitles[tab] || "Evolve Fit";
+  rememberStudentTab(tab);
   window.scrollTo(0, 0);
 }
 
@@ -127,32 +260,44 @@ function updateSetProgress() {
 function stopRestTimer(reset = true) {
   if (restInterval != null) clearInterval(restInterval);
   restInterval = null;
-  if (reset) {
-    restRemaining = 0;
-    $("rest-time").textContent = "Pronto para começar";
+  restDeadline = 0;
+  restRemaining = 0;
+  if (reset) $("rest-time").textContent = "Pronto para começar";
+}
+
+function updateRestCountdown() {
+  if (!restDeadline) return;
+  restRemaining = Math.max(0, Math.ceil((restDeadline - Date.now()) / 1000));
+  if (restRemaining <= 0) {
+    stopRestTimer(false);
+    $("rest-time").textContent = "Descanso concluído ✓";
+    if (selectedWorkout) saveActiveWorkoutDraft();
+    return;
   }
+  const minutes = String(Math.floor(restRemaining / 60)).padStart(2, "0");
+  const secs = String(restRemaining % 60).padStart(2, "0");
+  $("rest-time").textContent = minutes + ":" + secs + " restantes";
 }
 
-function startRestTimer(seconds) {
+function startRestTimer(seconds, deadline = 0) {
   stopRestTimer(false);
-  restRemaining = Math.max(0, Number(seconds) || 0);
-  const update = () => {
-    const minutes = String(Math.floor(restRemaining / 60)).padStart(2, "0");
-    const secs = String(restRemaining % 60).padStart(2, "0");
-    $("rest-time").textContent = restRemaining > 0
-      ? `${minutes}:${secs} restantes`
-      : "Descanso concluído ✓";
-  };
-  update();
-  if (restRemaining === 0) return;
-  restInterval = setInterval(() => {
-    restRemaining = Math.max(0, restRemaining - 1);
-    update();
-    if (restRemaining === 0) stopRestTimer(false);
-  }, 1000);
+  restDeadline = deadline > Date.now()
+    ? deadline
+    : Date.now() + Math.max(0, Number(seconds) || 0) * 1000;
+  if (restDeadline <= Date.now()) {
+    $("rest-time").textContent = "Descanso concluído ✓";
+    restDeadline = 0;
+  } else {
+    updateRestCountdown();
+    restInterval = setInterval(updateRestCountdown, 1000);
+  }
+  saveActiveWorkoutDraft();
 }
 
-$("rest-stop").onclick = () => stopRestTimer();
+$("rest-stop").onclick = () => {
+  stopRestTimer();
+  saveActiveWorkoutDraft();
+};
 
 function lastWorkoutLog(workout) {
   return logs.find(log => log.workoutId === workout.id);
@@ -212,9 +357,11 @@ function weekSchedule() {
   }
 }
 
-function startWorkout(workout) {
+function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
+  if (selectedWorkout) saveActiveWorkoutDraft();
   selectedWorkout = workout;
   stopRestTimer();
+  writeDraft(localStore(), studentKey("active-workout"), { workoutId: workout.id });
 
   $("active-workout").hidden = false;
   $("active-workout-name").textContent = workout.name;
@@ -333,15 +480,30 @@ function startWorkout(workout) {
   });
 
   $("training-message").textContent = "";
+  $("student-draft-status").textContent =
+    "Seu preenchimento será salvo automaticamente neste aparelho.";
+  if (!ignoreDraft) restoreWorkoutDraft(workout);
   updateSetProgress();
   showTab("workouts");
-  $("active-workout").scrollIntoView({ behavior: "smooth" });
+  if (scroll) $("active-workout").scrollIntoView({ behavior: "smooth" });
 }
 
 $("close-workout").onclick = () => {
+  saveActiveWorkoutDraft();
   selectedWorkout = null;
   stopRestTimer();
+  removeDraft(localStore(), studentKey("active-workout"));
   $("active-workout").hidden = true;
+};
+
+$("discard-workout-draft").onclick = () => {
+  if (!selectedWorkout ||
+      !confirm("Descartar o preenchimento não enviado deste treino? Os registros já concluídos serão mantidos.")) return;
+  const workout = selectedWorkout;
+  removeDraft(localStore(), workoutKey(workout.id));
+  selectedWorkout = null;
+  startWorkout(workout, { scroll: false, ignoreDraft: true });
+  $("student-draft-status").textContent = "Rascunho descartado. Você pode começar um novo preenchimento.";
 };
 
 function renderWorkouts() {
@@ -659,14 +821,17 @@ $("training-form").onsubmit = async event => {
       return { name: exercise.name, series };
     }).filter(exercise => exercise.series.length);
 
+    const finishedWorkoutId = selectedWorkout.id;
     await addDoc(collection(db, "trainingLogs"), {
       studentId: currentUser.uid,
-      workoutId: selectedWorkout.id,
+      workoutId: finishedWorkoutId,
       workoutName: selectedWorkout.name,
       exercises,
       createdAt: serverTimestamp()
     });
 
+    removeDraft(localStore(), workoutKey(finishedWorkoutId));
+    removeDraft(localStore(), studentKey("active-workout"));
     selectedWorkout = null;
     stopRestTimer();
     $("active-workout").hidden = true;
@@ -709,6 +874,7 @@ $("measurement-form").onsubmit = async event => {
     });
 
     $("measurement-form").reset();
+    removeDraft(localStore(), studentKey("measurements"));
     $("measurement-message").textContent = "Medidas salvas!";
 
     await refreshData();
@@ -770,6 +936,7 @@ onAuthStateChanged(auth, async user => {
 
     try {
       await refreshData();
+      restoreStudentSession();
     } catch (error) {
       console.error(error);
       alert(
@@ -805,6 +972,8 @@ $("student-password-reset").addEventListener("click", async () => {
 });
 
 $("logout").onclick = async () => {
+  if (currentUser) clearUserDrafts(localStore(), "student", currentUser.uid);
+  currentUser = null;
   await signOut(auth);
   location.replace("index.html");
 };
