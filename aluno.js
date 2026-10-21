@@ -143,7 +143,8 @@ function restoreStudentSession() {
   const active = pending?.workoutId &&
     workouts.find(workout => workout.id === pending.workoutId);
   if (active) {
-    startWorkout(active, { scroll: false });
+    // Retoma exatamente a ficha em andamento e mostra o preenchimento recuperado.
+    startWorkout(active);
     return;
   }
   if (pending) removeDraft(localStore(), studentKey("active-workout"));
