@@ -910,6 +910,7 @@ const felipeHeading = element("h3", "", "🏋️ Plano masculino — Felipe Guti
 const felipeDescription = element("p", "muted",
   "Seis treinos de segunda a sábado, conforme o plano masculino original. " +
   "Todos os 29 exercícios têm vídeo de demonstração. " +
+  "Se a ficha do Felipe já estiver publicada, somente a quinta-feira será atualizada. " +
   "Esse envio não altera o plano de cinco dias da Vitória.");
 const felipeMessage = element("p", "status-message",
   "Verificando se Felipe Gutierres está cadastrado e aprovado...");
@@ -934,7 +935,7 @@ FELIPE_MALE_PLAN.forEach(workout => {
   felipePreview.append(group);
 });
 const felipePublishButton = element("button", "primary-btn",
-  "Publicar os 6 treinos para Felipe Gutierres");
+  "Publicar / atualizar os treinos do Felipe");
 felipePublishButton.type = "button";
 felipePublishButton.disabled = true;
 felipePanel.append(felipeHeading, felipeDescription, felipePreview,
@@ -993,7 +994,7 @@ felipePublishButton.onclick = async () => {
   }
   const student = matches[0];
   if (!confirm(
-    `Publicar as ${FELIPE_MALE_PLAN.length} fichas masculinas para ${student.name} ` +
+    `Publicar as fichas ausentes e atualizar somente a quinta-feira de ${student.name} ` +
     `(${student.email || student.id})? Nenhuma ficha da Vitória será alterada.`
   )) return;
 
@@ -1013,6 +1014,7 @@ felipePublishButton.onclick = async () => {
     const batch = writeBatch(db);
     const expectedIds = [];
     let added = 0;
+    let updatedThursday = false;
 
     for (const workout of FELIPE_MALE_PLAN) {
       const id = `male-plan-${FELIPE_MALE_PLAN_ID}-${currentUser.uid}-${student.id}-${workout.day}`;
@@ -1024,6 +1026,18 @@ felipePublishButton.onclick = async () => {
             saved.status !== "published") {
           throw new Error("Uma ficha já existe com identificação incompatível. " +
             "Nenhuma ficha será sobrescrita.");
+        }
+
+        // Nunca reescrever os demais dias: só atualizar a quinta do Felipe.
+        if (workout.day === "quinta" &&
+            (JSON.stringify(saved.exercises) !== JSON.stringify(workout.exercises) ||
+             saved.description !== workout.description)) {
+          batch.update(doc(db, "workouts", id), {
+            exercises: workout.exercises,
+            description: workout.description,
+            updatedAt: serverTimestamp()
+          });
+          updatedThursday = true;
         }
         continue;
       }
@@ -1038,7 +1052,7 @@ felipePublishButton.onclick = async () => {
       added++;
     }
 
-    if (added) await batch.commit();
+    if (added || updatedThursday) await batch.commit();
     await refreshData();
 
     if (!expectedIds.every(id => workouts.some(workout =>
@@ -1051,9 +1065,11 @@ felipePublishButton.onclick = async () => {
     }
 
     felipeMessage.textContent = added
-      ? `✅ ${FELIPE_MALE_PLAN.length} treinos publicados exclusivamente para ${student.name}! ` +
-        "Acesse Meus treinos para conferi-los."
-      : "✅ Os seis treinos já estavam publicados para Felipe. Nenhuma ficha foi duplicada.";
+      ? `✅ Treinos publicados para ${student.name} com a nova quinta-feira! ` +
+        "Os vídeos estão disponíveis em cada exercício."
+      : updatedThursday
+        ? "✅ Quinta-feira atualizada para o Felipe: abdominal máquina, solo com peso, oblíquos na máquina e esteira. Demais dias e Vitória intactos."
+        : "✅ As fichas do Felipe já estavam atualizadas. Nenhum treino foi duplicado.";
     $("trainer-workout-search").value = "";
     $("trainer-workout-status").value = "published";
     $("trainer-workout-student").value = student.id;
@@ -1065,8 +1081,8 @@ felipePublishButton.onclick = async () => {
   } finally {
     publishingFelipe = false;
     felipePublishButton.disabled = false;
-    // Os dados atualizados são usados para evitar outra publicação por engano.
-    renderFelipePlan();
+    // Preservar o resultado da publicação ou atualização na mensagem do painel.
+    felipePublishButton.disabled = felipeMatches(students).length !== 1;
   }
 };
 
