@@ -95,3 +95,100 @@ export function compareWorkoutDays(a, b) {
   };
   return rank(a.day) - rank(b.day);
 }
+
+
+// O histórico não distingue "concluído por inteiro" de "salvo parcialmente".
+// Esta contagem inclui apenas séries efetivamente registradas.
+export function recordedSeriesCount(log) {
+  return (log?.exercises || []).reduce((total, exercise) =>
+    total + (Array.isArray(exercise.series) ? exercise.series.length : 0), 0);
+}
+
+// Consistência = semanas com ao menos um treino salvo nas 4 semanas de calendário
+// mais recentes (incluindo a semana atual). Não é frequência prescrita.
+export function trainingConsistency(logs, today = new Date(), weeks = 4) {
+  const totalWeeks = Number.isFinite(weeks)
+    ? Math.max(1, Math.min(12, Math.trunc(weeks))) : 4;
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - (totalWeeks - 1) * 7);
+  const active = new Set();
+  for (const log of logs || []) {
+    const date = timestampDate(log.createdAt);
+    if (!date || !Number.isFinite(date.getTime()) || date < start || date > today) continue;
+    const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    active.add([monday.getFullYear(), monday.getMonth(), monday.getDate()].join("-"));
+  }
+  return {
+    activeWeeks: active.size,
+    totalWeeks,
+    percent: Math.round(active.size / totalWeeks * 100)
+  };
+}
+
+// PR de carga: série de maior peso (em empate, maior número de repetições)
+// para cada exercício. O ganho em kg é comparado ao recorde anterior, não
+// ao volume somado da sessão. As séries de peso corporal (0 kg) ficam fora.
+export function personalRecords(logs, workouts = []) {
+  const workoutDays = new Map((workouts || [])
+    .filter(workout => workout?.id && normalizeDay(workout.day))
+    .map(workout => [workout.id, normalizeDay(workout.day)]));
+
+  const datedLogs = (logs || []).map((log, index) => ({
+    log, index, date: timestampDate(log.createdAt)
+  })).filter(item => item.date && Number.isFinite(item.date.getTime()))
+    .sort((a, b) => a.date - b.date || a.index - b.index);
+
+  const records = new Map();
+  for (const { log, date } of datedLogs) {
+    for (const exercise of log.exercises || []) {
+      const name = String(exercise.name || "").trim();
+      if (!name) continue;
+
+      let sessionBest = null;
+      for (const series of exercise.series || []) {
+        const weight = Number(series.weight);
+        const reps = Number(series.reps);
+        if (!Number.isFinite(weight) || weight <= 0 ||
+            !Number.isInteger(reps) || reps <= 0) continue;
+        if (!sessionBest || weight > sessionBest.weight ||
+            (weight === sessionBest.weight && reps > sessionBest.reps)) {
+          sessionBest = { weight, reps };
+        }
+      }
+      if (!sessionBest) continue;
+
+      const key = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR");
+      const previous = records.get(key);
+      if (previous && (sessionBest.weight < previous.weight ||
+        (sessionBest.weight === previous.weight && sessionBest.reps <= previous.reps))) {
+        continue;
+      }
+
+      const prescribedDay = workoutDays.get(log.workoutId);
+      const day = prescribedDay || localDay(date);
+      records.set(key, {
+        name,
+        day,
+        daySource: prescribedDay ? "ficha" : "registro",
+        weight: sessionBest.weight,
+        reps: sessionBest.reps,
+        date,
+        // Mantém o último ganho real em kg quando o atleta melhora
+        // só as repetições com o mesmo peso.
+        gainKg: previous
+          ? sessionBest.weight > previous.weight
+            ? sessionBest.weight - previous.weight
+            : previous.gainKg
+          : null,
+        gainReps: previous && sessionBest.weight === previous.weight
+          ? sessionBest.reps - previous.reps
+          : null,
+        hasPrevious: Boolean(previous)
+      });
+    }
+  }
+  return [...records.values()].sort((a, b) =>
+    b.date - a.date || a.name.localeCompare(b.name, "pt-BR"));
+}
