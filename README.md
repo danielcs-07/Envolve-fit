@@ -9,14 +9,16 @@ Plataforma de acompanhamento de treino e evolução para **um treinador** e seus
 - Consulta fichas, calendário semanal e treino recomendado para hoje.
 - Registra cargas, repetições e séries concluídas, incluindo treinos parciais.
 - Usa um cronômetro de descanso e encontra vídeos de execução quando fornecidos pelo treinador.
-- Acompanha histórico, medidas, volume estimado e progressão de carga por exercício.
+- Acompanha histórico, medidas, recordes pessoais (PR) por exercício, progressão de carga e consistência das últimas quatro semanas.
+- Cada PR mostra exercício, dia da ficha (ou dia do registro quando a ficha não existe mais), maior carga, repetições e ganho real desde o recorde anterior. A primeira sessão é o ponto inicial, não um aumento inventado.
+- A consistência conta semanas com pelo menos um treino salvo, nas quatro semanas de calendário mais recentes, incluindo a atual; não mede cumprimento de metas de frequência. Os treinos registrados incluem sessões parciais.
 - Pode solicitar redefinição de senha pelo próprio e-mail.
 
 ## Treinador
 - Aprova novos cadastros na seção **Meus alunos**.
 - Cria, edita, publica e duplica fichas de treinamento.
 - Pesquisa treinos e alunos e usa filtros para localizar registros.
-- Consulta evolução individual por aluno e por exercício.
+- Consulta evolução individual por aluno, incluindo recordes pessoais por exercício e consistência semanal.
 - Exporta registros filtrados de treino em CSV.
 
 ## Como usar

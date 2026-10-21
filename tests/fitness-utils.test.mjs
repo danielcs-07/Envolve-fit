@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   normalizeDay, localDay, weekDates, numberOfSeries,
-  trainingVolume, bestSetProgress, uniqueExercises, recentLogs
+  trainingVolume, bestSetProgress, uniqueExercises, recentLogs,
+  recordedSeriesCount, trainingConsistency, personalRecords
 } from "../fitness-utils.mjs";
 
 const date = (year, month, day) => new Date(year, month - 1, day);
@@ -48,4 +49,92 @@ test("contagem recente não inclui sessões fora da janela", () => {
     {createdAt:{seconds:Math.floor(date(2026,10,5).getTime()/1000)}}
   ];
   assert.equal(recentLogs(logs,7,today).length,1);
+});
+
+const logAt = (year, month, day, workoutId, exercises) => ({
+  workoutId,
+  createdAt: { seconds: Math.floor(date(year, month, day).getTime() / 1000) },
+  exercises
+});
+
+test("consistência conta semanas distintas nas últimas quatro, sem contar o futuro", () => {
+  const today = date(2026, 10, 21);
+  today.setHours(20);
+  const logs = [
+    logAt(2026, 9, 27, "a", []), // fora da janela de quatro semanas
+    logAt(2026, 9, 29, "a", []), // semana 1
+    logAt(2026, 10, 5, "a", []), // semana 2
+    logAt(2026, 10, 7, "b", []), // semana 2, não duplica
+    logAt(2026, 10, 19, "a", []), // semana 4
+    logAt(2026, 10, 26, "a", []) // futuro
+  ];
+  assert.deepEqual(trainingConsistency(logs, today), {
+    activeWeeks: 3, totalWeeks: 4, percent: 75
+  });
+  assert.deepEqual(trainingConsistency([], today), {
+    activeWeeks: 0, totalWeeks: 4, percent: 0
+  });
+});
+
+test("PR registra a carga e repetição verdadeiras e calcula ganho versus PR anterior", () => {
+  const logs = [
+    logAt(2026, 10, 7, "w1", [
+      { name: "Puxada frente", series: [{ weight: 23, reps: 8 }, { weight: 21, reps: 12 }] }
+    ]),
+    logAt(2026, 10, 5, "w1", [
+      { name: "Puxada frente", series: [{ weight: 20, reps: 10 }] },
+      { name: "Esteira", series: [{ weight: 0, reps: 30 }] }
+    ]),
+    logAt(2026, 10, 9, "w1", [
+      { name: "puxada frente", series: [{ weight: 23, reps: 11 }] }
+    ]),
+    logAt(2026, 10, 11, "w1", [
+      { name: "Puxada frente", series: [{ weight: 22, reps: 15 }] }
+    ])
+  ];
+  const [record] = personalRecords(logs, [{ id: "w1", day: "terça" }]);
+  assert.equal(personalRecords(logs, [{ id: "w1", day: "terça" }]).length, 1);
+  assert.equal(record.weight, 23);
+  assert.equal(record.reps, 11);
+  assert.equal(record.gainKg, 3);
+  assert.equal(record.gainReps, 3);
+  assert.equal(record.day, "terca");
+  assert.equal(record.daySource, "ficha");
+  assert.equal(record.date.getDate(), 9);
+  assert.equal(record.hasPrevious, true);
+});
+
+test("primeiro registro é referência e ficha excluída usa dia do registro", () => {
+  const logs = [
+    logAt(2026, 10, 9, "deleted-workout", [
+      { name: "Remada", series: [{ weight: 18.5, reps: 12 }] }
+    ])
+  ];
+  const [record] = personalRecords(logs, []);
+  assert.equal(record.weight, 18.5);
+  assert.equal(record.reps, 12);
+  assert.equal(record.gainKg, null);
+  assert.equal(record.gainReps, null);
+  assert.equal(record.day, "sexta");
+  assert.equal(record.daySource, "registro");
+  assert.equal(record.hasPrevious, false);
+});
+
+test("ignora séries inválidas e conta somente séries efetivamente salvas", () => {
+  const log = logAt(2026, 10, 19, "w1", [
+    { name: "Supino", series: [
+      { weight: 0, reps: 12 },
+      { weight: -3, reps: 10 },
+      { weight: 10, reps: 0 },
+      { weight: 12, reps: 8 }
+    ] },
+    { name: "Abdominal", series: [{ weight: 0, reps: 15 }] }
+  ]);
+  assert.equal(recordedSeriesCount(log), 5);
+  assert.equal(recordedSeriesCount({ exercises: [] }), 0);
+  const records = personalRecords([log]);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].name, "Supino");
+  assert.equal(records[0].weight, 12);
+  assert.equal(records[0].reps, 8);
 });

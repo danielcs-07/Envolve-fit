@@ -8,7 +8,7 @@
   <title>Painel do Treinador | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
-  <link rel="stylesheet" href="pro-features.css?v=1">
+  <link rel="stylesheet" href="pro-features.css?v=20261021-recordes">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -316,6 +316,21 @@
             </label>
           </div>
           <div id="trainer-progress-summary" class="mini-stats-grid"></div>
+          <p class="muted progress-explainer">
+            Consistência: pelo menos um treino salvo na semana, considerando as últimas quatro semanas.
+            As sessões parciais também aparecem como treinos registrados.
+          </p>
+
+          <article class="panel-card pr-section">
+            <div class="card-heading">
+              <div>
+                <h3>🏆 PRs por exercício</h3>
+                <p id="trainer-pr-student-name" class="muted">Selecione um aluno para ver seus recordes.</p>
+                <p class="muted">Carga máxima, repetições, dia da ficha e ganho em relação ao PR anterior.</p>
+              </div>
+            </div>
+            <div id="trainer-pr-records"></div>
+          </article>
           <div class="panel-grid">
             <article class="panel-card">
               <h3>⚖️ Peso corporal</h3>
@@ -350,7 +365,7 @@
     </div>
   </div>
 
-  <script type="module" src="treinador.js?v=20261021-male-exercise-videos"></script>
+  <script type="module" src="treinador.js?v=20261021-recordes-consistencia"></script>
   <script defer src="pwa.js"></script>
   <script type="module" src="aprovacao.js"></script>
 </body>
