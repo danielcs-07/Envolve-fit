@@ -21,8 +21,11 @@ import {
 
 import {
   WEEK_DAYS, normalizeDay, timestampDate, recentLogs, compareWorkoutDays,
-  numberOfSeries, trainingVolume, uniqueExercises, bestSetProgress
-} from "./fitness-utils.mjs?v=20261020-order";
+  numberOfSeries, recordedSeriesCount, trainingConsistency, personalRecords,
+  uniqueExercises, bestSetProgress
+} from "./fitness-utils.mjs?v=20261021-pr-consistency";
+
+import { renderPRList } from "./pr-ui.mjs";
 
 import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
@@ -544,9 +547,10 @@ function renderLogs() {
       element("h3", "", log.workoutName || "Treino"),
       element("p", "muted", `${student?.name || "Aluno"} · ${dateLabel(log.createdAt)}`)
     );
-    const volume = element("span", "volume-pill",
-      `${trainingVolume(log).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg de volume`);
-    heading.append(content, volume);
+    const seriesCount = recordedSeriesCount(log);
+    const indicator = element("span", "volume-pill",
+      `${seriesCount} ${seriesCount === 1 ? "série registrada" : "séries registradas"}`);
+    heading.append(content, indicator);
     card.append(heading);
 
     (log.exercises || []).forEach(exercise => {
@@ -632,14 +636,20 @@ function renderProgress() {
   drawBars($("trainer-strength-chart"),
     bestSetProgress(selectedLogs, select.value), "kg");
 
+  const consistency = trainingConsistency(selectedLogs);
+  // Use somente as fichas do aluno selecionado, evitando misturar seus PRs.
+  const studentWorkouts = workouts.filter(workout =>
+    workout.studentId === studentId);
+  const records = personalRecords(selectedLogs, studentWorkouts);
+
   const summary = $("trainer-progress-summary");
   summary.replaceChildren();
-  const volume = selectedLogs.reduce((total, log) => total + trainingVolume(log), 0);
   const cards = [
-    ["👤", "Aluno selecionado", student?.name || "Nenhum"],
-    ["✅", "Treinos concluídos", String(selectedLogs.length)],
+    ["✅", "Treinos registrados", String(selectedLogs.length)],
     ["📅", "Treinos em 7 dias", String(recentLogs(selectedLogs).length)],
-    ["🏋️", "Volume acumulado", `${volume.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg`]
+    ["🔥", "Consistência (últimas 4 semanas)",
+      consistency.activeWeeks + "/" + consistency.totalWeeks + " semanas"],
+    ["🏆", "Exercícios com PR de carga", String(records.length)]
   ];
   cards.forEach(([icon, label, value]) => {
     const card = element("div", "mini-stat");
@@ -650,6 +660,10 @@ function renderProgress() {
     );
     summary.append(card);
   });
+
+  $("trainer-pr-student-name").textContent =
+    student ? "Recordes de " + student.name : "Selecione um aluno para ver os recordes";
+  renderPRList($("trainer-pr-records"), records, 8);
 
   const container = $("measurement-list");
   container.replaceChildren();
