@@ -27,6 +27,7 @@ import {
 import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
 import { FIVE_DAY_PLAN, FIVE_DAY_PLAN_ID } from "./treino-cinco-dias.mjs";
+import { FELIPE_MALE_PLAN, FELIPE_MALE_PLAN_ID } from "./treino-masculino-felipe.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -908,6 +909,7 @@ felipePanel.id = "felipe-masculino";
 const felipeHeading = element("h3", "", "🏋️ Plano masculino — Felipe Gutierres");
 const felipeDescription = element("p", "muted",
   "Seis treinos de segunda a sábado, conforme o plano masculino original. " +
+  "Todos os 29 exercícios têm vídeo de demonstração. " +
   "Esse envio não altera o plano de cinco dias da Vitória.");
 const felipeMessage = element("p", "status-message",
   "Verificando se Felipe Gutierres está cadastrado e aprovado...");
@@ -915,12 +917,20 @@ felipeMessage.setAttribute("role", "status");
 const felipePreview = document.createElement("details");
 const felipePreviewTitle = element("summary", "", "Conferir divisão e exercícios");
 felipePreview.append(felipePreviewTitle);
-WEEKLY_DRAFTS.forEach(workout => {
+FELIPE_MALE_PLAN.forEach(workout => {
   const group = element("div", "log-exercise");
   group.append(element("strong", "", workout.name));
-  const names = element("p", "muted",
-    (workout.exercises || []).map(exercise => exercise.name).join(" · "));
-  group.append(names);
+  const videoList = document.createElement("ul");
+  workout.exercises.forEach(exercise => {
+    const item = document.createElement("li");
+    const link = element("a", "", "▶ " + exercise.name);
+    link.href = exercise.video;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    item.append(link);
+    videoList.append(item);
+  });
+  group.append(videoList);
   felipePreview.append(group);
 });
 const felipePublishButton = element("button", "primary-btn",
@@ -935,8 +945,8 @@ felipeSection.insertBefore(felipePanel, felipeExistingPanel);
 
 function normalizedStudentName(name) {
   return String(name || "").normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR")
-    .trim().replace(/\\s+/g, " ");
+    .replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR")
+    .trim().replace(/\s+/g, " ");
 }
 
 function felipeMatches(entries) {
@@ -964,13 +974,13 @@ function renderFelipePlan() {
       workout.trainerId === currentUser?.uid &&
       workout.status === "published" &&
       String(workout.id).startsWith(
-        `male-plan-${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${student.id}-`
+        `male-plan-${FELIPE_MALE_PLAN_ID}-${currentUser.uid}-${student.id}-`
       )
     ).length;
-    felipeMessage.textContent = count === WEEKLY_DRAFTS.length
+    felipeMessage.textContent = count === FELIPE_MALE_PLAN.length
       ? "Os seis treinos masculinos já estão publicados para Felipe Gutierres."
       : `Perfil ativo localizado: ${student.name} (${student.email || "sem e-mail visível"}). ` +
-        `Fichas deste plano já publicadas: ${count} de ${WEEKLY_DRAFTS.length}.`;
+        `Fichas deste plano já publicadas: ${count} de ${FELIPE_MALE_PLAN.length}.`;
   }
 }
 
@@ -983,7 +993,7 @@ felipePublishButton.onclick = async () => {
   }
   const student = matches[0];
   if (!confirm(
-    `Publicar as ${WEEKLY_DRAFTS.length} fichas masculinas para ${student.name} ` +
+    `Publicar as ${FELIPE_MALE_PLAN.length} fichas masculinas para ${student.name} ` +
     `(${student.email || student.id})? Nenhuma ficha da Vitória será alterada.`
   )) return;
 
@@ -1004,8 +1014,8 @@ felipePublishButton.onclick = async () => {
     const expectedIds = [];
     let added = 0;
 
-    for (const workout of WEEKLY_DRAFTS) {
-      const id = `male-plan-${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${student.id}-${workout.day}`;
+    for (const workout of FELIPE_MALE_PLAN) {
+      const id = `male-plan-${FELIPE_MALE_PLAN_ID}-${currentUser.uid}-${student.id}-${workout.day}`;
       expectedIds.push(id);
       if (existing.has(id)) {
         const saved = existing.get(id);
@@ -1041,7 +1051,7 @@ felipePublishButton.onclick = async () => {
     }
 
     felipeMessage.textContent = added
-      ? `✅ ${WEEKLY_DRAFTS.length} treinos publicados exclusivamente para ${student.name}! ` +
+      ? `✅ ${FELIPE_MALE_PLAN.length} treinos publicados exclusivamente para ${student.name}! ` +
         "Acesse Meus treinos para conferi-los."
       : "✅ Os seis treinos já estavam publicados para Felipe. Nenhuma ficha foi duplicada.";
     $("trainer-workout-search").value = "";
