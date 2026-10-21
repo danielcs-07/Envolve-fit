@@ -754,11 +754,34 @@ async function ensureWeeklyDrafts() {
   const refs = WEEKLY_DRAFTS.map(workout =>
     doc(db, "workouts", `${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${workout.day}`));
   const snapshot = await getDocs(collection(db, "workouts"));
-  const existing = new Set(snapshot.docs.map(item => item.id));
+  const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
   const batch = writeBatch(db);
   let added = 0;
+  let updated = 0;
   WEEKLY_DRAFTS.forEach((workout, index) => {
-    if (existing.has(refs[index].id)) return;
+    const saved = existing.get(refs[index].id);
+    if (saved) {
+      // Atualize somente vídeos faltantes nos rascunhos originais sem aluno.
+      // Fichas publicadas e fichas modificadas pelo treinador permanecem intactas.
+      if (saved.trainerId !== currentUser.uid || saved.studentId ||
+          saved.status !== "draft" ||
+          !Array.isArray(saved.exercises) ||
+          saved.exercises.length !== workout.exercises.length ||
+          !saved.exercises.every((ex, i) =>
+            ex.name === workout.exercises[i].name)) return;
+
+      const updatedExercises = saved.exercises.map((ex, i) =>
+        ex.video ? ex : { ...ex, video: workout.exercises[i].video });
+      if (!updatedExercises.some((ex, i) =>
+          ex.video !== saved.exercises[i].video)) return;
+
+      batch.update(refs[index], {
+        exercises: updatedExercises,
+        updatedAt: serverTimestamp()
+      });
+      updated++;
+      return;
+    }
     batch.set(refs[index], {
       ...workout,
       trainerId: currentUser.uid,
@@ -769,15 +792,15 @@ async function ensureWeeklyDrafts() {
     });
     added++;
   });
-  if (added) await batch.commit();
-  return added;
+  if (added || updated) await batch.commit();
+  return { added, updated };
 }
 
 
 const draftPanel = element("section", "panel-card");
 const draftMessage = element("p", "status-message", "Treino de segunda a sábado • aquecimento + 12, 10 e 8 • sem aluno vinculado.");
 draftMessage.setAttribute("role", "status");
-const importDraftsButton = element("button", "primary-btn", "Importar meus 6 rascunhos");
+const importDraftsButton = element("button", "primary-btn", "Importar / atualizar vídeos dos 6 treinos");
 importDraftsButton.type = "button";
 draftPanel.append(element("h3", "", "Seu treino semanal"), draftMessage, importDraftsButton);
 $("workout-list").before(draftPanel);
@@ -788,11 +811,11 @@ async function importWeeklyDrafts() {
   importDraftsButton.disabled = true;
   draftMessage.textContent = "Conferindo e salvando seus rascunhos...";
   try {
-    const added = await ensureWeeklyDrafts();
+    const { added, updated } = await ensureWeeklyDrafts();
     await refreshData();
-    draftMessage.textContent = added
-      ? `${added} rascunho(s) salvo(s), sem aluno vinculado. Veja as fichas abaixo.`
-      : "Os seis treinos já foram importados. Confira as fichas abaixo.";
+    draftMessage.textContent = added || updated
+      ? `${added} rascunho(s) criado(s) e ${updated} atualizado(s) com vídeos. Veja as fichas abaixo.`
+      : "Os rascunhos já têm vídeos ou foram personalizados/publicados; nada foi alterado.";
     $("trainer-workout-search").value = "";
     $("trainer-workout-status").value = "";
     $("trainer-workout-student").value = "";

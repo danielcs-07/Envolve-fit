@@ -55,3 +55,11 @@ test("Plano da Vitória permanece separado da ficha masculina do Felipe", () => 
   assert.equal(FIVE_DAY_PLAN.find(day => day.day === "quinta").name,
     "Quinta — Bíceps e tríceps");
 });
+test("Todos os 29 exercícios dos seis treinos masculinos incluem URLs do YouTube", () => {
+  const exercises = WEEKLY_DRAFTS.flatMap(workout => workout.exercises);
+  assert.equal(WEEKLY_DRAFTS.length, 6);
+  assert.equal(exercises.length, 29);
+  for (const exercise of exercises) {
+    assert.match(exercise.video, /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/);
+  }
+});
