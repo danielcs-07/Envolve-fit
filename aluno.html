@@ -170,15 +170,23 @@
                 <h2 id="active-workout-name"></h2>
                 <p id="active-workout-description"></p>
               </div>
-              <button id="close-workout" class="outline-btn">
-                Fechar
-              </button>
+              <div class="draft-top-actions">
+                <button id="discard-workout-draft" type="button" class="outline-btn">
+                  Descartar rascunho
+                </button>
+                <button id="close-workout" type="button" class="outline-btn">
+                  Fechar
+                </button>
+              </div>
             </div>
 
             <div class="workout-progress-panel">
               <div class="progress-header"><strong>Seu progresso no treino</strong><span id="workout-progress-text">0 de 0 séries</span></div>
               <progress id="workout-progress" value="0" max="1"></progress>
               <p class="muted">Marque cada série concluída. Somente as séries marcadas serão registradas.</p>
+              <p id="student-draft-status" class="autosave-status" role="status" aria-live="polite">
+                Seu preenchimento será salvo automaticamente neste aparelho.
+              </p>
             </div>
             <div class="rest-timer" id="rest-timer" aria-live="polite">
               <span>⏱️ Descanso</span><strong id="rest-time">Pronto para começar</strong>
@@ -293,7 +301,7 @@
     </div>
   </div>
 
-  <script type="module" src="aluno.js?v=20261021-recordes-consistencia"></script>
+  <script type="module" src="aluno.js?v=20261021-auto-recuperacao-v1"></script>
   <script defer src="pwa.js"></script>
 </body>
 </html>
