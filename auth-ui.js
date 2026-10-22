@@ -1,5 +1,6 @@
 
 import { auth, db } from "./firebase-config.js";
+import { trainerFromInvite, isTrainerSignup } from "./beta-access.mjs";
 
 import {
   signInWithEmailAndPassword,
@@ -28,7 +29,10 @@ const switchButton = document.getElementById("switch-btn");
 const switchText = document.getElementById("switch-text");
 const message = document.getElementById("auth-message");
 
-let isRegistering = false;
+const requestedTrainerId = trainerFromInvite(location.search);
+const trainerRegistration = isTrainerSignup(location.search);
+const canRegister = Boolean(requestedTrainerId || trainerRegistration);
+let isRegistering = canRegister;
 let isBusy = false;
 
 function showMessage(text, type = "") {
@@ -46,7 +50,11 @@ function updateForm() {
     : "Bem-vindo de volta!";
 
   formSubtitle.textContent = isRegistering
-    ? "Cadastre-se e aguarde a aprovação do treinador."
+    ? (trainerRegistration
+      ? "Cadastro beta de treinador: sua conta será liberada manualmente pelo administrador."
+      : requestedTrainerId
+        ? "Cadastro por convite: aguarde a aprovação do seu personal."
+        : "Peça ao treinador um link de convite.")
     : "Entre na sua conta para continuar evoluindo.";
 
   nameGroup.hidden = !isRegistering;
@@ -68,6 +76,7 @@ function updateForm() {
     ? "Fazer login"
     : "Criar conta";
 
+  switchButton.hidden = !canRegister;
   showMessage("");
 }
 
@@ -92,13 +101,15 @@ async function getProfile(user) {
 }
 
 switchButton.addEventListener("click", () => {
-  if (isBusy) return;
+  if (isBusy || !canRegister) return;
 
   isRegistering = !isRegistering;
   updateForm();
 });
 
-async function registerStudent(email, password) {
+async function registerAccount(email, password) {
+  if (!canRegister) throw new Error("Solicite um link de convite ao seu treinador.");
+  const role = trainerRegistration ? "trainer" : "student";
   const name = nameInput.value.trim();
 
   if (name.length < 2 || name.length > 100) {
@@ -115,8 +126,9 @@ async function registerStudent(email, password) {
     await setDoc(doc(db, "users", credential.user.uid), {
       name,
       email: credential.user.email,
-      role: "student",
+      role,
       active: false,
+      ...(role === "student" ? { trainerId: requestedTrainerId } : {}),
       createdAt: serverTimestamp()
     });
 
@@ -127,7 +139,9 @@ async function registerStudent(email, password) {
     updateForm();
 
     showMessage(
-      "Conta criada com sucesso! Aguarde a aprovação do treinador para entrar.",
+      role === "trainer"
+        ? "Solicitação beta recebida! Aguarde a liberação do administrador."
+        : "Conta criada! Aguarde a aprovação do seu personal.",
       "success"
     );
 
@@ -165,7 +179,9 @@ async function login(email, password) {
     await signOut(auth);
 
     showMessage(
-      "Seu cadastro está aguardando aprovação do treinador. 💙",
+      profile.role === "trainer"
+        ? "Seu acesso beta está aguardando liberação pelo administrador."
+        : "Seu cadastro está aguardando aprovação do treinador. 💙",
       "error"
     );
     return;
@@ -203,7 +219,7 @@ form.addEventListener("submit", async event => {
     const password = passwordInput.value;
 
     if (isRegistering) {
-      await registerStudent(email, password);
+      await registerAccount(email, password);
     } else {
       await login(email, password);
     }
