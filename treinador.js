@@ -12,6 +12,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
+  where,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -26,6 +28,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { buildStudentInvite } from "./beta-access.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
 } from "./draft-storage.mjs";
@@ -176,6 +179,30 @@ function element(tag, className = "", content = "") {
   node.textContent = content;
   return node;
 }
+
+// Convite do aluno: vinculo definitivo so sera validado pelas regras do Firestore.
+const invitePanel = element("article", "panel-card");
+const inviteTitle = element("h3", "", "🔗 Convide seus alunos");
+const inviteHelp = element("p", "muted", "Envie este link. O aluno se cadastra vinculado a você e aguarda sua aprovação.");
+const inviteInput = document.createElement("input");
+inviteInput.type = "url";
+inviteInput.readOnly = true;
+inviteInput.setAttribute("aria-label", "Link de cadastro dos seus alunos");
+const inviteButton = element("button", "outline-btn", "Copiar link de convite");
+inviteButton.type = "button";
+const inviteStatus = element("p", "status-message", "");
+inviteButton.onclick = async () => {
+  if (!currentUser || !inviteInput.value) return;
+  try {
+    await navigator.clipboard.writeText(inviteInput.value);
+    inviteStatus.textContent = "Link copiado! Envie ao aluno.";
+  } catch {
+    inviteInput.select();
+    inviteStatus.textContent = "Selecione e copie o link acima.";
+  }
+};
+invitePanel.append(inviteTitle, inviteHelp, inviteInput, inviteButton, inviteStatus);
+$("tab-students").prepend(invitePanel);
 
 function inputField(labelText, type, value, placeholder = "") {
   const wrapper = element("label", "form-field");
@@ -842,15 +869,15 @@ function renderDashboard() {
 
 async function refreshData() {
   const [userSnap, workoutSnap, logSnap, measureSnap] = await Promise.all([
-    getDocs(collection(db, "users")),
-    getDocs(collection(db, "workouts")),
-    getDocs(collection(db, "trainingLogs")),
-    getDocs(collection(db, "measurements"))
+    getDocs(query(collection(db, "users"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "trainingLogs"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "measurements"), where("trainerId", "==", currentUser.uid)))
   ]);
 
   students = userSnap.docs
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
-    .filter(user => user.role === "student" && user.active === true);
+    .filter(user => user.role === "student" && user.active === true && user.trainerId === currentUser.uid);
 
   workouts = workoutSnap.docs
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
@@ -861,14 +888,14 @@ async function refreshData() {
 
   logs = logSnap.docs
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
-    .filter(log => students.some(student => student.id === log.studentId))
+    .filter(log => log.trainerId === currentUser.uid && students.some(student => student.id === log.studentId))
     .sort((a, b) =>
       (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
     );
 
   measurements = measureSnap.docs
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
-    .filter(item => students.some(student => student.id === item.studentId));
+    .filter(item => item.trainerId === currentUser.uid && students.some(student => student.id === item.studentId));
 
   workouts.sort(compareWorkoutDays);
   renderStudents();
@@ -883,7 +910,7 @@ async function refreshData() {
 async function ensureWeeklyDrafts() {
   const refs = WEEKLY_DRAFTS.map(workout =>
     doc(db, "workouts", `${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${workout.day}`));
-  const snapshot = await getDocs(collection(db, "workouts"));
+  const snapshot = await getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid)));
   const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
   const batch = writeBatch(db);
   let added = 0;
@@ -967,7 +994,7 @@ fiveDaySelect.id = "five-day-student";
 const fiveDayLabel = element("label", "form-field", "Perfil que receberá os cinco treinos");
 fiveDayLabel.htmlFor = fiveDaySelect.id;
 fiveDayLabel.append(fiveDaySelect);
-const fiveDayMessage = element("p", "status-message", "Selecione o perfil da Vitória e publique as cinco fichas com os vídeos.");
+const fiveDayMessage = element("p", "status-message", "Selecione um aluno e publique as cinco fichas com vídeos.");
 fiveDayMessage.setAttribute("role", "status");
 const fiveDayButton = element("button", "primary-btn", "Publicar os 5 treinos para o perfil selecionado");
 fiveDayButton.type = "button";
@@ -997,7 +1024,7 @@ $("workout-list").before(fiveDayPanel);
 let publishingFiveDays = false;
 function renderFiveDayStudents() {
   const previous = fiveDaySelect.value;
-  fiveDaySelect.replaceChildren(new Option("Selecione o perfil da Vitória", ""));
+  fiveDaySelect.replaceChildren(new Option("Selecione um aluno", ""));
   students.forEach(student => fiveDaySelect.add(
     new Option(`${student.name || "Aluno"} — ${student.email || student.id}`, student.id)));
   if (students.some(student => student.id === previous)) fiveDaySelect.value = previous;
@@ -1022,7 +1049,7 @@ fiveDayButton.onclick = async () => {
     if (!profile.exists() || profile.data().role !== "student" || profile.data().active !== true) {
       throw new Error("Este perfil não está ativo como aluno.");
     }
-    const snapshot = await getDocs(collection(db, "workouts"));
+    const snapshot = await getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid)));
     const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
     const batch = writeBatch(db);
     const ids = [];
@@ -1097,6 +1124,7 @@ onAuthStateChanged(auth, async user => {
     }
 
     currentUser = user;
+    inviteInput.value = buildStudentInvite(window.location.href, user.uid);
     const profile = profileSnap.data();
     const name = profile.name || "Treinador";
 
@@ -1112,7 +1140,7 @@ onAuthStateChanged(auth, async user => {
 
     try {
       await refreshData();
-      await importWeeklyDrafts();
+      // Modelos semanais podem ser importados manualmente por cada treinador.
       restoreTrainerSession();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);

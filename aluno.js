@@ -31,6 +31,7 @@ import {
 const $ = id => document.getElementById(id);
 
 let currentUser = null;
+let currentTrainerId = "";
 let workouts = [];
 let logs = [];
 let measurements = [];
@@ -824,6 +825,7 @@ $("training-form").onsubmit = async event => {
     const finishedWorkoutId = selectedWorkout.id;
     await addDoc(collection(db, "trainingLogs"), {
       studentId: currentUser.uid,
+      trainerId: currentTrainerId,
       workoutId: finishedWorkoutId,
       workoutName: selectedWorkout.name,
       exercises,
@@ -868,6 +870,7 @@ $("measurement-form").onsubmit = async event => {
   try {
     await addDoc(collection(db, "measurements"), {
       studentId: currentUser.uid,
+      trainerId: currentTrainerId,
       weight,
       height,
       createdAt: serverTimestamp()
@@ -922,7 +925,13 @@ onAuthStateChanged(auth, async user => {
       return;
     }
 
+    if (!profileSnap.data().trainerId) {
+      accessError("Sua conta precisa ser vinculada a um personal antes de usar a versão beta.");
+      return;
+    }
+
     currentUser = user;
+    currentTrainerId = profileSnap.data().trainerId;
 
     const name = profileSnap.data().name || "Aluno";
 

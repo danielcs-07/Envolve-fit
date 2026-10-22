@@ -10,6 +10,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
+  where,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
@@ -41,12 +43,14 @@ function showMessage(text) {
   message.textContent = text;
 }
 
-async function loadPendingStudents() {
+async function loadPendingStudents(trainerId) {
   list.replaceChildren();
   showMessage("Carregando solicitações...");
 
   try {
-    const snapshot = await getDocs(collection(db, "users"));
+    const snapshot = await getDocs(query(
+      collection(db, "users"), where("trainerId", "==", trainerId)
+    ));
 
     const pending = snapshot.docs
       .map(item => ({
@@ -55,6 +59,7 @@ async function loadPendingStudents() {
       }))
       .filter(item =>
         item.role === "student" &&
+        item.trainerId === trainerId &&
         item.active === false
       );
 
@@ -101,7 +106,7 @@ async function loadPendingStudents() {
           });
 
           showMessage("✅ Aluno aprovado com sucesso!");
-          await loadPendingStudents();
+          await loadPendingStudents(trainerId);
 
           alert(
             "Aluno aprovado! Atualize o painel para vê-lo na lista de alunos ativos."
@@ -142,7 +147,7 @@ onAuthStateChanged(auth, async user => {
       profile.data().role === "trainer" &&
       profile.data().active === true
     ) {
-      await loadPendingStudents();
+      await loadPendingStudents(user.uid);
     }
   } catch (error) {
     console.error("Erro ao verificar treinador:", error);
