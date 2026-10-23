@@ -969,7 +969,7 @@ fiveDaySelect.id = "five-day-student";
 const fiveDayLabel = element("label", "form-field", "Perfil que receberá os cinco treinos");
 fiveDayLabel.htmlFor = fiveDaySelect.id;
 fiveDayLabel.append(fiveDaySelect);
-const fiveDayMessage = element("p", "status-message", "Selecione o perfil da Vitória e publique as cinco fichas com os vídeos.");
+const fiveDayMessage = element("p", "status-message", "Selecione um aluno e publique as cinco fichas com vídeos, se esse plano for adequado.");
 fiveDayMessage.setAttribute("role", "status");
 const fiveDayButton = element("button", "primary-btn", "Publicar os 5 treinos para o perfil selecionado");
 fiveDayButton.type = "button";
@@ -999,7 +999,7 @@ $("workout-list").before(fiveDayPanel);
 let publishingFiveDays = false;
 function renderFiveDayStudents() {
   const previous = fiveDaySelect.value;
-  fiveDaySelect.replaceChildren(new Option("Selecione o perfil da Vitória", ""));
+  fiveDaySelect.replaceChildren(new Option("Selecione um aluno", ""));
   students.forEach(student => fiveDaySelect.add(
     new Option(`${student.name || "Aluno"} — ${student.email || student.id}`, student.id)));
   if (students.some(student => student.id === previous)) fiveDaySelect.value = previous;
