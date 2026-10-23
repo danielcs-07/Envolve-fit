@@ -16,7 +16,9 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
@@ -842,10 +844,10 @@ function renderDashboard() {
 
 async function refreshData() {
   const [userSnap, workoutSnap, logSnap, measureSnap] = await Promise.all([
-    getDocs(collection(db, "users")),
-    getDocs(collection(db, "workouts")),
-    getDocs(collection(db, "trainingLogs")),
-    getDocs(collection(db, "measurements"))
+    getDocs(query(collection(db, "users"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "trainingLogs"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "measurements"), where("trainerId", "==", currentUser.uid)))
   ]);
 
   students = userSnap.docs
@@ -883,7 +885,7 @@ async function refreshData() {
 async function ensureWeeklyDrafts() {
   const refs = WEEKLY_DRAFTS.map(workout =>
     doc(db, "workouts", `${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${workout.day}`));
-  const snapshot = await getDocs(collection(db, "workouts"));
+  const snapshot = await getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid)));
   const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
   const batch = writeBatch(db);
   let added = 0;
@@ -967,7 +969,7 @@ fiveDaySelect.id = "five-day-student";
 const fiveDayLabel = element("label", "form-field", "Perfil que receberá os cinco treinos");
 fiveDayLabel.htmlFor = fiveDaySelect.id;
 fiveDayLabel.append(fiveDaySelect);
-const fiveDayMessage = element("p", "status-message", "Selecione o perfil da Vitória e publique as cinco fichas com os vídeos.");
+const fiveDayMessage = element("p", "status-message", "Selecione um aluno e publique as cinco fichas com vídeos, se esse plano for adequado.");
 fiveDayMessage.setAttribute("role", "status");
 const fiveDayButton = element("button", "primary-btn", "Publicar os 5 treinos para o perfil selecionado");
 fiveDayButton.type = "button";
@@ -997,7 +999,7 @@ $("workout-list").before(fiveDayPanel);
 let publishingFiveDays = false;
 function renderFiveDayStudents() {
   const previous = fiveDaySelect.value;
-  fiveDaySelect.replaceChildren(new Option("Selecione o perfil da Vitória", ""));
+  fiveDaySelect.replaceChildren(new Option("Selecione um aluno", ""));
   students.forEach(student => fiveDaySelect.add(
     new Option(`${student.name || "Aluno"} — ${student.email || student.id}`, student.id)));
   if (students.some(student => student.id === previous)) fiveDaySelect.value = previous;
@@ -1022,7 +1024,7 @@ fiveDayButton.onclick = async () => {
     if (!profile.exists() || profile.data().role !== "student" || profile.data().active !== true) {
       throw new Error("Este perfil não está ativo como aluno.");
     }
-    const snapshot = await getDocs(collection(db, "workouts"));
+    const snapshot = await getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid)));
     const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
     const batch = writeBatch(db);
     const ids = [];
@@ -1064,6 +1066,19 @@ fiveDayButton.onclick = async () => {
 };
 
 
+$("trainer-copy-invite").addEventListener("click", async () => {
+  const link = $("trainer-invite-link").value;
+  if (!link) return;
+  const message = $("trainer-invite-message");
+  try {
+    await navigator.clipboard.writeText(link);
+    message.textContent = "Link de convite copiado! Envie somente aos seus alunos.";
+  } catch {
+    $("trainer-invite-link").select();
+    message.textContent = "Selecione e copie o link acima para enviar ao aluno.";
+  }
+});
+
 function accessError(message) {
   $("app").hidden = true;
   $("loading").replaceChildren();
@@ -1104,6 +1119,10 @@ onAuthStateChanged(auth, async user => {
     $("profile-name").textContent = name;
     $("profile-email").textContent = user.email || "";
     $("avatar").textContent = name.charAt(0).toUpperCase();
+
+    const invitation = new URL("index.html", window.location.href);
+    invitation.searchParams.set("trainer", user.uid);
+    $("trainer-invite-link").value = invitation.href;
 
     $("loading").hidden = true;
     $("app").hidden = false;

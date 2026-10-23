@@ -1,0 +1,201 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function activeUser() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.active == true;
+    }
+
+    function isTrainer() {
+      return activeUser()
+        && get(userPath(request.auth.uid)).data.role == "trainer";
+    }
+
+    function isStudent() {
+      return activeUser()
+        && get(userPath(request.auth.uid)).data.role == "student";
+    }
+
+    function trainerExists(trainerId) {
+      return trainerId is string
+        && exists(userPath(trainerId))
+        && get(userPath(trainerId)).data.role == "trainer"
+        && get(userPath(trainerId)).data.active == true;
+    }
+
+    function assignedToCurrentTrainer(studentId) {
+      return studentId is string
+        && exists(userPath(studentId))
+        && get(userPath(studentId)).data.role == "student"
+        && get(userPath(studentId)).data.active == true
+        && get(userPath(studentId)).data.trainerId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn()
+        && (
+          request.auth.uid == userId
+          || (isTrainer()
+            && resource.data.role == "student"
+            && resource.data.trainerId == request.auth.uid)
+        );
+
+      // Consultas do treinador devem conter where("trainerId", "==", uid).
+      allow list: if isTrainer()
+        && resource.data.trainerId == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          "name", "email", "role", "active", "trainerId", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "name", "email", "role", "active", "trainerId", "createdAt"
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == "student"
+        && request.resource.data.active == false
+        && trainerExists(request.resource.data.trainerId)
+        && request.resource.data.createdAt == request.time;
+
+      // Somente o treinador que possui o aluno pode aprovar ou desativar.
+      allow update: if isTrainer()
+        && resource.data.role == "student"
+        && resource.data.trainerId == request.auth.uid
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(["active"])
+        && request.resource.data.active is bool;
+
+      allow delete: if false;
+    }
+
+    match /workouts/{workoutId} {
+      allow read: if (isTrainer()
+          && resource.data.trainerId == request.auth.uid)
+        || (isStudent()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == "published");
+
+      allow create: if isTrainer()
+        && request.resource.data.trainerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 250
+        && request.resource.data.exercises is list
+        && request.resource.data.exercises.size() > 0
+        && request.resource.data.exercises.size() <= 100
+        && request.resource.data.studentId is string
+        && request.resource.data.status in ["draft", "published"]
+        && ((
+          request.resource.data.status == "draft"
+          && request.resource.data.studentId == ""
+        ) || (
+          request.resource.data.studentId != ""
+          && assignedToCurrentTrainer(request.resource.data.studentId)
+        ));
+
+      allow update: if isTrainer()
+        && resource.data.trainerId == request.auth.uid
+        && request.resource.data.trainerId == resource.data.trainerId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 250
+        && request.resource.data.exercises is list
+        && request.resource.data.exercises.size() > 0
+        && request.resource.data.exercises.size() <= 100
+        && request.resource.data.studentId is string
+        && request.resource.data.status in ["draft", "published"]
+        && ((
+          request.resource.data.status == "draft"
+          && request.resource.data.studentId == ""
+        ) || (
+          request.resource.data.studentId != ""
+          && assignedToCurrentTrainer(request.resource.data.studentId)
+        ));
+
+      allow delete: if isTrainer()
+        && resource.data.trainerId == request.auth.uid;
+    }
+
+    match /trainingLogs/{logId} {
+      allow read: if (isTrainer()
+          && resource.data.trainerId == request.auth.uid)
+        || (isStudent()
+          && resource.data.studentId == request.auth.uid);
+
+      allow create: if isStudent()
+        && request.resource.data.keys().hasOnly([
+          "studentId", "trainerId", "workoutId", "workoutName",
+          "exercises", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "studentId", "trainerId", "workoutId", "workoutName",
+          "exercises", "createdAt"
+        ])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.trainerId == get(userPath(request.auth.uid)).data.trainerId
+        && request.resource.data.workoutId is string
+        && request.resource.data.workoutId.size() > 0
+        && request.resource.data.workoutName is string
+        && request.resource.data.workoutName.size() > 0
+        && request.resource.data.workoutName.size() <= 250
+        && request.resource.data.exercises is list
+        && request.resource.data.exercises.size() > 0
+        && request.resource.data.exercises.size() <= 100
+        && request.resource.data.createdAt == request.time
+        && exists(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        )
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        ).data.studentId == request.auth.uid
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        ).data.trainerId == request.resource.data.trainerId
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        ).data.status == "published";
+
+      allow update, delete: if false;
+    }
+
+    match /measurements/{measurementId} {
+      allow read: if (isTrainer()
+          && resource.data.trainerId == request.auth.uid)
+        || (isStudent()
+          && resource.data.studentId == request.auth.uid);
+
+      allow create: if isStudent()
+        && request.resource.data.keys().hasOnly([
+          "studentId", "trainerId", "weight", "height", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "studentId", "trainerId", "weight", "height", "createdAt"
+        ])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.trainerId == get(userPath(request.auth.uid)).data.trainerId
+        && request.resource.data.weight is number
+        && request.resource.data.height is number
+        && request.resource.data.weight >= 1
+        && request.resource.data.weight <= 500
+        && request.resource.data.height >= 50
+        && request.resource.data.height <= 250
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+  }
+}
