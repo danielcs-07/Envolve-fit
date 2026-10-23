@@ -356,6 +356,13 @@
             <h3 id="profile-name">Treinador</h3>
             <p id="profile-email"></p>
             <span class="role-pill">Conta de treinador</span>
+            <div class="form-group">
+              <label for="trainer-invite-link">Link de cadastro dos seus alunos</label>
+              <input id="trainer-invite-link" type="text" readonly aria-label="Link de convite para alunos">
+              <button id="trainer-copy-invite" type="button" class="outline-btn profile-action">Copiar convite</button>
+              <p class="muted">Os alunos criam a conta pelo convite e aguardam sua aprovação.</p>
+              <p id="trainer-invite-message" class="status-message" role="status"></p>
+            </div>
             <button type="button" id="trainer-password-reset" class="outline-btn profile-action">Enviar link para redefinir senha</button>
             <p class="status-message" id="trainer-profile-message" role="status"></p>
           </article>
