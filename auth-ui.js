@@ -27,6 +27,8 @@ const submitButton = document.getElementById("submit-btn");
 const switchButton = document.getElementById("switch-btn");
 const switchText = document.getElementById("switch-text");
 const message = document.getElementById("auth-message");
+const invitationTrainerId = new URLSearchParams(window.location.search).get("trainer") || "";
+const validInvitation = /^[a-zA-Z0-9_-]{10,128}$/.test(invitationTrainerId);
 
 let isRegistering = false;
 let isBusy = false;
@@ -93,12 +95,19 @@ async function getProfile(user) {
 
 switchButton.addEventListener("click", () => {
   if (isBusy) return;
+  if (!isRegistering && !validInvitation) {
+    showMessage("Peça ao seu personal trainer o link de convite para criar sua conta.", "error");
+    return;
+  }
 
   isRegistering = !isRegistering;
   updateForm();
 });
 
 async function registerStudent(email, password) {
+  if (!validInvitation) {
+    throw new Error("Link de convite inválido. Solicite o link ao seu treinador.");
+  }
   const name = nameInput.value.trim();
 
   if (name.length < 2 || name.length > 100) {
@@ -117,6 +126,7 @@ async function registerStudent(email, password) {
       email: credential.user.email,
       role: "student",
       active: false,
+      trainerId: invitationTrainerId,
       createdAt: serverTimestamp()
     });
 
