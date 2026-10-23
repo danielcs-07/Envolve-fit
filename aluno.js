@@ -35,6 +35,7 @@ let workouts = [];
 let logs = [];
 let measurements = [];
 let selectedWorkout = null;
+let assignedTrainerId = "";
 let saving = false;
 let restInterval = null;
 let restRemaining = 0;
@@ -824,6 +825,7 @@ $("training-form").onsubmit = async event => {
     const finishedWorkoutId = selectedWorkout.id;
     await addDoc(collection(db, "trainingLogs"), {
       studentId: currentUser.uid,
+      trainerId: assignedTrainerId,
       workoutId: finishedWorkoutId,
       workoutName: selectedWorkout.name,
       exercises,
@@ -868,6 +870,7 @@ $("measurement-form").onsubmit = async event => {
   try {
     await addDoc(collection(db, "measurements"), {
       studentId: currentUser.uid,
+      trainerId: assignedTrainerId,
       weight,
       height,
       createdAt: serverTimestamp()
@@ -922,7 +925,14 @@ onAuthStateChanged(auth, async user => {
       return;
     }
 
+    if (typeof profileSnap.data().trainerId !== "string" ||
+        !profileSnap.data().trainerId) {
+      accessError("Seu perfil ainda não está vinculado a um treinador. Solicite ajuda antes de usar esta versão beta.");
+      return;
+    }
+
     currentUser = user;
+    assignedTrainerId = profileSnap.data().trainerId;
 
     const name = profileSnap.data().name || "Aluno";
 
