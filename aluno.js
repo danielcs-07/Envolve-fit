@@ -392,45 +392,149 @@ function updateSetProgress() {
   });
 }
 
+function formatClock(totalSeconds, hours = false) {
+  const total = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const pad = value => String(value).padStart(2, "0");
+  return hours
+    ? pad(Math.floor(total / 3600)) + ":" + pad(Math.floor(total % 3600 / 60)) + ":" + pad(total % 60)
+    : pad(Math.floor(total / 60)) + ":" + pad(total % 60);
+}
+
+function elapsedTrainingSeconds() {
+  return sessionStartedAt > 0
+    ? Math.max(0, Math.floor((Date.now() - sessionStartedAt) / 1000)) : 0;
+}
+
+function updateSessionClock() {
+  $("session-elapsed").textContent = formatClock(elapsedTrainingSeconds(), true);
+}
+
+function stopSessionClock() {
+  if (sessionInterval !== null) clearInterval(sessionInterval);
+  sessionInterval = null;
+}
+
+function startSessionClock() {
+  stopSessionClock();
+  updateSessionClock();
+  sessionInterval = setInterval(updateSessionClock, 1000);
+}
+
+function clampRestSeconds(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(600, Math.max(15, Math.round(number))) : 60;
+}
+
+function suggestedRestSeconds(index) {
+  return clampRestSeconds(selectedWorkout?.exercises?.[index]?.rest ?? 60);
+}
+
+function renderRestTimer() {
+  const showingComplete = restStatus.startsWith("Descanso concluído");
+  $("rest-time").textContent = showingComplete
+    ? "00:00"
+    : formatClock(restDeadline || restPaused ? restRemaining : restSelectedSeconds);
+  const exercise = selectedWorkout?.exercises?.[restExerciseIndex];
+  $("rest-suggestion").textContent = exercise
+    ? "Sugestão do treinador: " + suggestedRestSeconds(restExerciseIndex) + "s · " + exercise.name
+    : "Você escolhe quanto descansar";
+  $("rest-hint").textContent = restStatus;
+  $("rest-toggle").textContent = restDeadline ? "Pausar" : restPaused ? "Continuar" : "Iniciar";
+  $("rest-stop").disabled = !restDeadline && !restPaused;
+}
+
 function stopRestTimer(reset = true) {
-  if (restInterval != null) clearInterval(restInterval);
+  if (restInterval !== null) clearInterval(restInterval);
   restInterval = null;
   restDeadline = 0;
-  restRemaining = 0;
-  if (reset) $("rest-time").textContent = "Pronto para começar";
+  restRemaining = restSelectedSeconds;
+  restPaused = false;
+  if (reset) restStatus = "Pronto para o próximo descanso.";
+  renderRestTimer();
 }
 
 function updateRestCountdown() {
   if (!restDeadline) return;
   restRemaining = Math.max(0, Math.ceil((restDeadline - Date.now()) / 1000));
-  if (restRemaining <= 0) {
+  if (restRemaining === 0) {
     stopRestTimer(false);
-    $("rest-time").textContent = "Descanso concluído ✓";
+    restStatus = "Descanso concluído ✓";
+    renderRestTimer();
     if (selectedWorkout) saveActiveWorkoutDraft();
     return;
   }
-  const minutes = String(Math.floor(restRemaining / 60)).padStart(2, "0");
-  const secs = String(restRemaining % 60).padStart(2, "0");
-  $("rest-time").textContent = minutes + ":" + secs + " restantes";
+  restStatus = "Descanso em andamento. Você pode ajustar ou pausar.";
+  renderRestTimer();
 }
 
 function startRestTimer(seconds, deadline = 0) {
   stopRestTimer(false);
   restDeadline = deadline > Date.now()
-    ? deadline
-    : Date.now() + Math.max(0, Number(seconds) || 0) * 1000;
+    ? deadline : Date.now() + Math.max(0, Number(seconds) || 0) * 1000;
   if (restDeadline <= Date.now()) {
-    $("rest-time").textContent = "Descanso concluído ✓";
-    restDeadline = 0;
+    stopRestTimer(false);
+    restStatus = "Descanso concluído ✓";
+    renderRestTimer();
   } else {
     updateRestCountdown();
     restInterval = setInterval(updateRestCountdown, 1000);
   }
+  if (selectedWorkout) saveActiveWorkoutDraft();
+}
+
+function chooseRestExercise(index) {
+  stopRestTimer(false);
+  restExerciseIndex = index;
+  restSelectedSeconds = clampRestSeconds(
+    restChoices[index] ?? suggestedRestSeconds(index)
+  );
+  restRemaining = restSelectedSeconds;
+  restStatus = "Tempo sugerido pelo treinador — ajuste como preferir.";
+  renderRestTimer();
+  startRestTimer(restSelectedSeconds);
+  $("rest-timer").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function adjustRest(delta) {
+  const chosen = clampRestSeconds(restSelectedSeconds + delta);
+  const difference = chosen - restSelectedSeconds;
+  if (!difference) return;
+  restSelectedSeconds = chosen;
+  restChoices[restExerciseIndex] = chosen;
+  if (restDeadline) {
+    restDeadline += difference * 1000;
+    updateRestCountdown();
+  } else if (restPaused) {
+    restRemaining = Math.max(1, Math.min(600, restRemaining + difference));
+    renderRestTimer();
+  } else {
+    restRemaining = chosen;
+    restStatus = "Tempo personalizado. Clique em iniciar quando quiser.";
+    renderRestTimer();
+  }
   saveActiveWorkoutDraft();
 }
 
+$("rest-minus").onclick = () => adjustRest(-15);
+$("rest-plus").onclick = () => adjustRest(15);
+$("rest-toggle").onclick = () => {
+  if (restDeadline) {
+    restRemaining = Math.max(1, Math.ceil((restDeadline - Date.now()) / 1000));
+    if (restInterval !== null) clearInterval(restInterval);
+    restInterval = null;
+    restDeadline = 0;
+    restPaused = true;
+    restStatus = "Descanso pausado.";
+    renderRestTimer();
+    saveActiveWorkoutDraft();
+  } else {
+    startRestTimer(restPaused ? restRemaining : restSelectedSeconds);
+  }
+};
 $("rest-stop").onclick = () => {
   stopRestTimer();
+  restStatus = "Descanso pulado. Você pode iniciar outro quando quiser.";
+  renderRestTimer();
   saveActiveWorkoutDraft();
 };
 
