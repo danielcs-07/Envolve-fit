@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
 } from "./draft-storage.mjs";
@@ -635,6 +636,20 @@ function dateLabel(timestamp) {
   return timestamp.toDate().toLocaleString("pt-BR");
 }
 
+function makeTrainerFeedbackCard(feedback, studentName = "") {
+  if (!validWorkoutFeedback(feedback)) return null;
+  const panel = element("div", "feedback-history-card");
+  const heading = element("div", "feedback-history-heading");
+  heading.append(
+    element("strong", "feedback-history-rating", feedbackStars(feedback)),
+    element("span", "feedback-history-label", feedbackEffort(feedback))
+  );
+  panel.append(heading);
+  if (studentName) panel.append(element("p", "feedback-history-person", studentName));
+  if (feedback.comment) panel.append(element("p", "feedback-history-comment", feedback.comment));
+  return panel;
+}
+
 function renderLogs() {
   const container = $("log-list");
   const recent = $("recent-activity");
@@ -675,6 +690,8 @@ function renderLogs() {
       `${seriesCount} ${seriesCount === 1 ? "série registrada" : "séries registradas"}`);
     heading.append(content, indicator);
     card.append(heading);
+    const assessment = makeTrainerFeedbackCard(log.feedback);
+    if (assessment) card.append(assessment);
 
     (log.exercises || []).forEach(exercise => {
       const block = element("div", "log-exercise");
@@ -823,11 +840,27 @@ function renderDashboard() {
   $("stat-logs").textContent = logs.length;
   const weekly = $("trainer-weekly-stats");
   weekly.replaceChildren();
+  const ratedLogs = logs.filter(log => validWorkoutFeedback(log.feedback));
+  const feedbackBox = $("trainer-latest-feedback");
+  feedbackBox.replaceChildren();
+  if (!ratedLogs.length) {
+    feedbackBox.append(element("p", "muted",
+      "As avaliações aparecerão aqui quando os alunos concluírem seus treinos."));
+  } else {
+    ratedLogs.slice(0, 4).forEach(log => {
+      const student = students.find(item => item.id === log.studentId);
+      const entry = makeTrainerFeedbackCard(
+        log.feedback, (student?.name || "Aluno") + " · " + (log.workoutName || "Treino")
+      );
+      if (entry) feedbackBox.append(entry);
+    });
+  }
   const weekLogs = recentLogs(logs);
   [
     ["📅", "Treinos desta semana", String(weekLogs.length)],
     ["💪", "Alunos que treinaram", String(new Set(weekLogs.map(log => log.studentId)).size)],
-    ["⏱️", "Último registro", logs.length ? dateLabel(logs[0].createdAt) : "Ainda não há"]
+    ["⏱️", "Último registro", logs.length ? dateLabel(logs[0].createdAt) : "Ainda não há"],
+    ["💬", "Feedbacks recebidos", String(ratedLogs.length)]
   ].forEach(([icon, label, value]) => {
     const card = element("div", "mini-stat");
     card.append(element("span", "mini-stat-icon", icon),

@@ -80,7 +80,7 @@ service cloud.firestore {
 
       allow create: if isStudent()
         && request.resource.data.keys().hasOnly([
-          "studentId", "workoutId", "workoutName", "exercises", "createdAt", "durationSeconds"
+          "studentId", "workoutId", "workoutName", "exercises", "createdAt", "durationSeconds", "feedback"
         ])
         && request.resource.data.keys().hasAll([
           "studentId", "workoutId", "workoutName", "exercises", "createdAt"
@@ -99,6 +99,16 @@ service cloud.firestore {
           (request.resource.data.durationSeconds is int &&
            request.resource.data.durationSeconds >= 0 &&
            request.resource.data.durationSeconds <= 604800))
+        && (!request.resource.data.keys().hasAny(["feedback"]) ||
+          (request.resource.data.feedback is map &&
+           request.resource.data.feedback.keys().hasOnly(["rating", "effort", "comment"]) &&
+           request.resource.data.feedback.keys().hasAll(["rating", "effort", "comment"]) &&
+           request.resource.data.feedback.rating is int &&
+           request.resource.data.feedback.rating >= 1 &&
+           request.resource.data.feedback.rating <= 5 &&
+           request.resource.data.feedback.effort in ["easy", "balanced", "hard"] &&
+           request.resource.data.feedback.comment is string &&
+           request.resource.data.feedback.comment.size() <= 500))
         && exists(
           /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
         )

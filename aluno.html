@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#14231e">
+  <meta name="theme-color" content="#112743">
   <title>Meus Treinos | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
-  <link rel="stylesheet" href="pro-features.css?v=20261028-timers-v1">
+  <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -214,8 +214,45 @@
             <form id="training-form">
               <div id="training-exercises"></div>
               <button id="finish-workout" class="primary-btn" type="submit">
-                ✅ Concluir e salvar treino
+                ✅ Concluir treino
               </button>
+              <section id="training-feedback" class="training-feedback" aria-labelledby="feedback-heading" hidden>
+                <div class="feedback-topline">
+                  <span class="feedback-icon" aria-hidden="true">💬</span>
+                  <div>
+                    <p class="feedback-kicker">ÚLTIMA ETAPA</p>
+                    <h3 id="feedback-heading">Como foi seu treino?</h3>
+                    <p>Seu treinador vai receber sua avaliação junto com as séries. É opcional.</p>
+                  </div>
+                </div>
+                <fieldset class="feedback-rating">
+                  <legend>Qual nota você dá para este treino?</legend>
+                  <div class="feedback-stars">
+                    <label><input type="radio" name="workout-rating" value="1"><span>★</span><small>1</small></label>
+                    <label><input type="radio" name="workout-rating" value="2"><span>★</span><small>2</small></label>
+                    <label><input type="radio" name="workout-rating" value="3"><span>★</span><small>3</small></label>
+                    <label><input type="radio" name="workout-rating" value="4"><span>★</span><small>4</small></label>
+                    <label><input type="radio" name="workout-rating" value="5"><span>★</span><small>5</small></label>
+                  </div>
+                </fieldset>
+                <fieldset class="feedback-effort">
+                  <legend>Como foi a intensidade?</legend>
+                  <div class="feedback-effort-options">
+                    <label><input type="radio" name="workout-effort" value="easy"><span>🙂 Fácil</span></label>
+                    <label><input type="radio" name="workout-effort" value="balanced" checked><span>💪 Na medida</span></label>
+                    <label><input type="radio" name="workout-effort" value="hard"><span>🔥 Muito puxado</span></label>
+                  </div>
+                </fieldset>
+                <label class="feedback-comment-label" for="workout-feedback-comment">Quer deixar um recado para seu treinador?</label>
+                <textarea id="workout-feedback-comment" rows="3" maxlength="500" placeholder="Ex.: Gostei do treino! Tive dificuldade no agachamento."></textarea>
+                <p class="feedback-counter"><span id="feedback-count">0</span>/500 caracteres</p>
+                <div class="feedback-actions">
+                  <button type="button" id="feedback-back" class="outline-btn">Voltar ao treino</button>
+                  <button type="button" id="feedback-skip" class="outline-btn">Pular avaliação</button>
+                  <button type="button" id="feedback-submit" class="primary-btn">Enviar e finalizar</button>
+                </div>
+                <p id="feedback-validation" class="feedback-validation" role="status"></p>
+              </section>
               <p id="training-message" role="status"></p>
             </form>
           </article>
@@ -232,6 +269,7 @@
             </label>
             <div class="toolbar-stat" id="student-history-summary"></div>
           </div>
+          <p id="student-history-notice" class="feedback-history-notice" role="status" hidden></p>
           <div id="student-history" class="cards-list"></div>
         </section>
 
@@ -320,7 +358,7 @@
     </div>
   </div>
 
-  <script type="module" src="aluno.js?v=20261028-timers-v1"></script>
+  <script type="module" src="aluno.js?v=20261028-feedback-v1"></script>
   <script defer src="pwa.js"></script>
 </body>
 </html>

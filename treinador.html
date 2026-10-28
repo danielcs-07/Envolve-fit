@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#14231e">
+  <meta name="theme-color" content="#112743">
   <title>Painel do Treinador | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
-  <link rel="stylesheet" href="pro-features.css?v=20261021-autosave">
+  <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -151,6 +151,15 @@
               </div>
             </article>
           </div>
+          <article class="panel-card trainer-feedback-overview">
+            <div class="card-heading">
+              <div>
+                <h3>💬 Feedback dos alunos</h3>
+                <p class="muted">Notas, dificuldade percebida e comentários dos últimos treinos.</p>
+              </div>
+            </div>
+            <div id="trainer-latest-feedback" class="trainer-feedback-list"></div>
+          </article>
         </section>
 
         <section id="tab-create" class="tab">
@@ -368,7 +377,7 @@
     </div>
   </div>
 
-  <script type="module" src="treinador.js?v=20261028-duration-v1"></script>
+  <script type="module" src="treinador.js?v=20261028-feedback-v1"></script>
   <script defer src="pwa.js"></script>
   <script type="module" src="aprovacao.js"></script>
 </body>
