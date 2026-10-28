@@ -385,3 +385,7 @@ button{cursor:pointer}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+.studio-profile-logout{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;min-height:44px;color:#bd334f!important;border:1px solid #f0cbd1!important;background:#fff4f6!important}
+.studio-profile-logout:hover{background:#ffe7ec!important}
+:root[data-studio-theme="dark"] .studio-profile-logout{background:#402b42!important;color:#ffd4de!important;border-color:#70405a!important}
