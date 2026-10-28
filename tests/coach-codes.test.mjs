@@ -6,7 +6,7 @@ test("código exclusivo possui formato consistente e 12 caracteres aleatórios",
  assert.equal(code.length,15);
  assert.equal(code,"EF-ABCDEFGHJKLM");
  assert.ok(validCoachCode(code));
- assert.equal(normalizeCoachCode(" ef-abcd efgh jklm "), "EF-ABCDEFGHIJKL");
+ assert.equal(normalizeCoachCode(" ef-abcd efgh jklm "), "EF-ABCDEFGHJKLM");
  assert.ok(!validCoachCode("EF-ABCDEF"));
  assert.ok(!validCoachCode("EF-000000000000"));
 });
