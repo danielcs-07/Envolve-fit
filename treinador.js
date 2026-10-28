@@ -1,5 +1,6 @@
 
 import { auth, db } from "./firebase-config.js";
+import { generateCoachCode } from "./coach-codes.mjs";
 
 import {
   onAuthStateChanged,
@@ -16,6 +17,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  writeBatch,
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
@@ -1008,6 +1010,36 @@ async function refreshData() {
   renderDashboard();
 }
 
+async function ensureTrainerCode(profile) {
+  const status = $("trainer-invite-status");
+  let code = profile.coachCode || "";
+  if (!code) {
+    status.textContent = "Preparando seu código exclusivo...";
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const candidate = generateCoachCode(crypto.getRandomValues(new Uint8Array(12)));
+      const batch = writeBatch(db);
+      batch.set(doc(db, "trainerCodes", candidate), {
+        trainerId: currentUser.uid, createdAt: serverTimestamp()
+      });
+      batch.update(doc(db, "users", currentUser.uid), { coachCode: candidate });
+      try {
+        await batch.commit();
+        code = candidate;
+        break;
+      } catch (error) {
+        if (error.code !== "permission-denied" && error.code !== "already-exists") throw error;
+        if (attempt === 3) throw error;
+      }
+    }
+  }
+  if (!code) throw new Error("Código não disponível");
+  $("trainer-coach-code").value = code;
+  const inviteUrl = new URL("index.html", location.href);
+  inviteUrl.searchParams.set("trainer", code);
+  $("trainer-invite-url").value = inviteUrl.href;
+  status.textContent = "Seus alunos digitam esse código ao se cadastrar e aguardam sua aprovação.";
+}
+
 function accessError(message) {
   $("app").hidden = true;
   $("loading").replaceChildren();
@@ -1044,10 +1076,13 @@ onAuthStateChanged(auth, async user => {
     const profile = profileSnap.data();
     const name = profile.name || "Treinador";
 
-    // Cada treinador possui um endereço de convite diferente.
-    const inviteUrl = new URL("index.html", window.location.href);
-    inviteUrl.searchParams.set("trainer", user.uid);
-    $("trainer-invite-url").value = inviteUrl.href;
+    try {
+      await ensureTrainerCode(profile);
+    } catch (error) {
+      console.warn("Código do treinador ainda não disponível:", error);
+      $("trainer-invite-status").textContent =
+        "Não foi possível gerar seu código. Primeiro é necessário publicar as novas regras no Firebase.";
+    }
     $("welcome-name").textContent = name.split(" ")[0];
     $("profile-name").textContent = name;
     $("profile-email").textContent = user.email || "";
@@ -1112,26 +1147,35 @@ $("trainer-export-csv").addEventListener("click", () => {
   downloadCsv("evolve-fit-historico.csv", rows);
 });
 
-$("trainer-copy-invite").addEventListener("click", async () => {
-  const button = $("trainer-copy-invite");
+async function copyTrainerValue(inputId, successMessage) {
   const status = $("trainer-invite-status");
-  const url = $("trainer-invite-url").value;
-  if (!currentUser || !url) return;
-  try {
-    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
-    else {
-      $("trainer-invite-url").focus();
-      $("trainer-invite-url").select();
-      status.textContent = "Selecione e copie o link acima.";
-      return;
-    }
-    status.textContent = "✓ Link copiado. O aluno poderá criar a própria conta para sua aprovação.";
-  } catch (error) {
-    $("trainer-invite-url").focus();
-    $("trainer-invite-url").select();
-    status.textContent = "Copie o endereço selecionado acima.";
+  const field = $(inputId);
+  if (!field.value) {
+    status.textContent = "O código ainda não foi criado. Verifique as regras do Firebase.";
+    return;
   }
-});
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(field.value);
+      status.textContent = successMessage;
+    } else {
+      field.focus();
+      field.select();
+      status.textContent = "Copie o texto selecionado.";
+    }
+  } catch (error) {
+    field.focus();
+    field.select();
+    status.textContent = "Copie o texto selecionado.";
+  }
+}
+
+$("trainer-copy-code").addEventListener("click", () =>
+  copyTrainerValue("trainer-coach-code", "✓ Código copiado! Envie ao seu aluno.")
+);
+$("trainer-copy-invite").addEventListener("click", () =>
+  copyTrainerValue("trainer-invite-url", "✓ Link de convite copiado!")
+);
 
 $("trainer-password-reset").addEventListener("click", async () => {
   const button = $("trainer-password-reset");
