@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=4">
   <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
-  <link rel="stylesheet" href="studio.css?v=20261028-polish-v2">
+  <link rel="stylesheet" href="studio.css?v=20261028-coachcode-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -72,6 +72,28 @@
           >
         </div>
 
+        <fieldset id="role-group" class="auth-role-group" hidden>
+          <legend>Como você vai usar o Evolve Fit?</legend>
+          <div class="auth-role-options">
+            <label class="auth-role-option">
+              <input type="radio" name="account-role" value="student" checked>
+              <span><strong>🏋️ Sou aluno</strong><small>Treinar com acompanhamento</small></span>
+            </label>
+            <label class="auth-role-option">
+              <input type="radio" name="account-role" value="trainer">
+              <span><strong>💼 Sou treinador</strong><small>Criar e acompanhar treinos</small></span>
+            </label>
+          </div>
+        </fieldset>
+        <div class="form-group" id="trainer-code-group" hidden>
+          <label for="trainer-code">Código do seu treinador</label>
+          <input id="trainer-code" name="trainer-code" type="text"
+            placeholder="EF-XXXXXXXXXXXX" autocomplete="off" autocapitalize="characters"
+            spellcheck="false" maxlength="15" pattern="EF-[A-HJ-NP-Z2-9]{12}">
+          <small class="auth-code-hint">Solicite o código ao treinador. Ele aprovará seu acesso após o cadastro.</small>
+        </div>
+        <p id="trainer-register-hint" class="auth-trainer-hint" hidden>Seu código exclusivo será gerado automaticamente, sem precisar acessar o Firebase.</p>
+
         <div class="form-group">
           <label for="email">E-mail</label>
           <input
@@ -120,7 +142,7 @@
     </main>
   </div>
 
-  <script type="module" src="auth-ui.js?v=20261028-multitrainer-v1"></script>
+  <script type="module" src="auth-ui.js?v=20261028-coachcode-v1"></script>
   <script defer src="login-enhancements.js?v=20261028-password-toggle"></script>
   <script defer src="studio-shell.js?v=20261028-v1"></script>
   <script defer src="pwa.js"></script>
