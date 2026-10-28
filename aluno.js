@@ -75,7 +75,7 @@ function draftCloudRef() {
   return doc(db, "sessionDrafts", currentUser.uid);
 }
 
-function scheduleCloudDraft(data) {
+function scheduleCloudDraft(data, immediate = false) {
   if (!currentUser || !cloudDraftAllowed) return;
   const uid = currentUser.uid;
   const generation = ++cloudDraftGeneration;
@@ -99,7 +99,7 @@ function scheduleCloudDraft(data) {
         console.warn("Backup na nuvem indisponível; rascunho local preservado.", error.code || error);
       }
     });
-  }, 700);
+  }, immediate ? 0 : 700);
 }
 
 async function removeCloudDraft() {
@@ -155,7 +155,7 @@ function rememberStudentTab(tab) {
   writeDraft(localStore(), studentKey("tab"), { tab });
 }
 
-function saveActiveWorkoutDraft() {
+function saveActiveWorkoutDraft(immediate = false) {
   if (!currentUser || !selectedWorkout) return false;
   const exercises = [...$("training-exercises").querySelectorAll(".series-grid")]
     .map(group => {
@@ -177,7 +177,7 @@ function saveActiveWorkoutDraft() {
     restDeadline
   };
   const saved = writeDraft(localStore(), workoutKey(selectedWorkout.id), draft);
-  scheduleCloudDraft(draft);
+  scheduleCloudDraft(draft, immediate);
   $("student-draft-status").textContent = saved
     ? "✓ Progresso salvo automaticamente neste aparelho. Conclua o treino para enviar ao treinador."
     : "⚠️ O navegador não permitiu salvar o rascunho. Não feche esta página sem concluir.";
@@ -266,7 +266,7 @@ $("measurement-form").addEventListener("change", saveMeasurementDraft);
 
 function saveStudentFormsOnBackground() {
   if (!currentUser) return;
-  if (selectedWorkout) saveActiveWorkoutDraft();
+  if (selectedWorkout) saveActiveWorkoutDraft(true);
   saveMeasurementDraft();
 }
 document.addEventListener("visibilitychange", () => {
@@ -951,7 +951,7 @@ $("training-form").onsubmit = async event => {
 
     removeDraft(localStore(), workoutKey(finishedWorkoutId));
     removeDraft(localStore(), studentKey("active-workout"));
-    void removeCloudDraft();
+    await removeCloudDraft();
     selectedWorkout = null;
     stopRestTimer();
     $("active-workout").hidden = true;
