@@ -4,11 +4,22 @@ Plataforma de acompanhamento de treino e evolução para **um treinador** e seus
 
 **Site:** https://danielcs-07.github.io/Envolve-fit/
 
+## Evolve Fit Studio — revisão da interface e Ferramentas
+
+- A identidade visual passou por uma revisão completa para remover elementos verdes antigos dos arquivos CSS e do ícone, mantendo uma paleta de azul, grafite e violeta.
+- A área **Explorar** foi substituída por **Ferramentas**, com biblioteca pesquisável dos exercícios das fichas publicadas, vídeos já atribuídos, calculadora de anilhas simétricas, estimativa de 1RM por Epley e favoritos de música.
+- Links do Spotify aceitos podem abrir um **player oficial incorporado**, iniciado somente por ação do aluno e sujeito às condições de reprodução do Spotify. Os demais serviços continuam usando links externos.
+- Na ficha do aluno, a opção **Substituir nesta sessão** usa exercícios já encontrados nas fichas disponíveis e registra a alternativa no rascunho do navegador. Ela não atualiza o documento da ficha do treinador; ao trocar um exercício preenchido, o aluno recebe uma confirmação de perda apenas das séries daquele exercício.
+- Gráficos por exercício do aluno e do treinador agora permitem alternar entre carga máxima (kg) e repetições máximas registradas em uma série.
+- A visão geral do treinador mostra alunos ativos sem ficha publicada e alunos sem registros nos últimos sete dias. Isso não significa que estejam atrasados: é apenas um indicador informativo.
+- A versão não modifica regras do Firestore nem migra registros existentes. **Substituições em rascunho ficam prioritariamente no dispositivo; em caso de troca de aparelho, nem todos os campos de rascunho podem ser recuperados até a atualização das regras.**
+- A próxima etapa técnica para múltiplos treinadores exige autenticação/autorização segregadas por treinador e revisão do Firebase Console.
+
 ## Evolve Fit Studio — novo design responsivo
 
 - Nova identidade visual com tons de azul, lavanda e verde-água, cartões reformulados e navegação inferior no celular.
 - Modo claro, escuro ou automático nas preferências do perfil, salvo somente neste navegador.
-- Nova seção **Explorar** com guias gerais de treino, buscas de playlists no Spotify/YouTube Music e um link favorito salvo localmente. A música é reproduzida nos serviços externos, não dentro do Evolve Fit.
+- Área **Ferramentas** com biblioteca dos exercícios recebidos, calculadoras de referência, playlist favorita e player oficial incorporado para links compatíveis do Spotify.
 - Painel do treinador com atalhos e **Modelos** que preenchem o formulário editável (corpo inteiro, superiores e inferiores) e **não publicam nada automaticamente**.
 - O histórico, as fichas, os cronômetros, o feedback, os registros de PR e as medidas continuam usando as estruturas anteriores.
 - A reforma **não altera registros existentes do Firestore e não publica regras do Firebase**. Recursos que dependam dos campos novos de feedback/duração ainda exigem revisar e publicar as regras apropriadas no Firebase Console.
