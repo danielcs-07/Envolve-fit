@@ -6,7 +6,7 @@
   --border:#e4e9f5;--shadow:0 13px 42px rgba(20,39,80,.045);
   --studio-bg:#f5f7fc;--studio-surface:#fff;--studio-text:#17243c;
   --studio-sub:#6d7d98;--studio-edge:#e5eaf4;--studio-primary:#5268ec;
-  --studio-accent:#24c4b1;--studio-deep:#111b33;--studio-soft:#eff2ff;
+  --studio-accent:#2942bf;--studio-deep:#111b33;--studio-soft:#eff2ff;
 }
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -25,7 +25,7 @@ button{cursor:pointer}
 }
 .dashboard-page .sidebar-brand{padding:0 10px 29px;gap:12px}
 .dashboard-page .brand-icon{
-  background:linear-gradient(145deg,#8b98ff,#4de3d0);border-radius:17px;
+  background:linear-gradient(145deg,#8b98ff,#5269df);border-radius:17px;
   color:#0f1534;transform:none;font-size:25px;box-shadow:0 12px 30px rgba(91,124,255,.2);
   width:48px;height:48px;flex:0 0 48px
 }
@@ -91,7 +91,7 @@ button{cursor:pointer}
 }
 .dashboard-page .hero-button:hover{background:#e8edff;color:#263878}
 .dashboard-page .hero-art{
-  background:linear-gradient(135deg,rgba(123,155,255,.2),rgba(43,218,196,.13));
+  background:linear-gradient(135deg,rgba(123,155,255,.2),rgba(48,76,213,.13));
   border:1px solid rgba(194,213,255,.2);
   width:150px;height:150px;flex:0 0 150px;border-radius:35px;
   box-shadow:0 24px 50px rgba(0,0,0,.11);font-size:72px;transform:rotate(8deg)
@@ -106,7 +106,7 @@ button{cursor:pointer}
   border-radius:13px;background:#eef2ff;color:#556ad5;
   width:42px;height:42px;font-size:21px;margin-bottom:13px
 }
-.dashboard-page .stat-card:nth-child(2) .stat-icon{background:#e8f9f6}
+.dashboard-page .stat-card:nth-child(2) .stat-icon{background:#e9ebf8}
 .dashboard-page .stat-card p,.dashboard-page .stat-card:nth-child(1) p{color:var(--studio-sub);font-size:11.5px;font-weight:800}
 .dashboard-page .stat-card strong,.dashboard-page .stat-card:nth-child(1) strong{
   font:800 clamp(26px,2.9vw,34px) 'Outfit',sans-serif;color:var(--studio-text)
@@ -185,7 +185,7 @@ button{cursor:pointer}
   box-shadow:0 13px 28px rgba(20,30,70,.12)}
 .studio-music-card:hover{transform:translateY(-3px);box-shadow:0 17px 32px rgba(20,30,70,.19)}
 .studio-music-energy{background:linear-gradient(135deg,#5849b5,#263b78)}
-.studio-music-focus{background:linear-gradient(135deg,#146f78,#192f66)}
+.studio-music-focus{background:linear-gradient(135deg,#172775,#192f66)}
 .studio-music-cardio{background:linear-gradient(135deg,#a64a76,#52396e)}
 .studio-music-symbol{position:absolute;right:11px;top:1px;font-size:115px;line-height:1;color:rgba(255,255,255,.11);font-weight:900}
 .studio-music-type{position:relative;color:#c9ddff;font-size:10px;letter-spacing:.17em;font-weight:900;margin-bottom:auto}
@@ -215,7 +215,7 @@ button{cursor:pointer}
   padding:26px;min-height:342px;box-shadow:var(--shadow)}
 .studio-model-mark{font-size:10px;letter-spacing:.14em;color:#647aab;font-weight:900}
 .studio-model-art{display:grid;place-items:center;width:68px;height:68px;border-radius:20px;
-  background:linear-gradient(140deg,#eceeff,#d9f8f4);color:#5265d8;font-size:41px;margin:24px 0 18px}
+  background:linear-gradient(140deg,#eceeff,#dadff7);color:#5265d8;font-size:41px;margin:24px 0 18px}
 .studio-model-card h3{font:800 23px 'Outfit',sans-serif;letter-spacing:-.045em;margin:0 0 8px;color:var(--studio-text)}
 .studio-model-card p{font-size:12.5px;line-height:1.65;color:var(--studio-sub);margin:0 0 17px}
 .studio-model-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto;margin-bottom:20px}
@@ -238,7 +238,7 @@ button{cursor:pointer}
 .login-page .login-visual::after{color:rgba(157,174,255,.04)}
 .login-page .login-visual-brand b,.login-page .login-visual-content h2 em{color:#a4bbff}
 .login-page .visual-kicker{color:#cadbff;border-color:rgba(171,185,255,.3);background:rgba(132,148,255,.1)}
-.login-page .brand-emblem,.login-page .visual-meter-mark{background:linear-gradient(145deg,#8fa5ff,#71e2db);color:#172341}
+.login-page .brand-emblem,.login-page .visual-meter-mark{background:linear-gradient(145deg,#8fa5ff,#7486df);color:#172341}
 .login-page .visual-features span::before{color:#8fa5ff}
 .login-page .login-card .primary-btn{background:#5268ed;color:#fff}
 .login-page .login-card .primary-btn:hover{background:#4358d9}
@@ -300,8 +300,8 @@ button{cursor:pointer}
 :root[data-studio-theme="dark"] .feedback-effort-options input:checked+span{background:#313d70;color:#fff}
 :root[data-studio-theme="dark"] .studio-guide,.studio-model-card,.studio-action{background:var(--studio-surface);border-color:var(--studio-edge)}
 :root[data-studio-theme="dark"] .studio-theme-options button.is-selected{background:#6878e8;border-color:#6878e8;color:#fff}
-:root[data-studio-theme="dark"] .dashboard-page .series-row.set-done{background:#223d3e;color:#edf5ff;border-color:#3a6e66}
-:root[data-studio-theme="dark"] .dashboard-page .status-published{background:#1c443a;color:#a9ead3}
+:root[data-studio-theme="dark"] .dashboard-page .series-row.set-done{background:#23273d;color:#edf5ff;border-color:#3c446c}
+:root[data-studio-theme="dark"] .dashboard-page .status-published{background:#1d2343;color:#abb5e8}
 :root[data-studio-theme="dark"] .dashboard-page .status-draft{background:#453c28;color:#ffe3a1}
 :root[data-studio-theme="dark"] .dashboard-page .empty-text,
 :root[data-studio-theme="dark"] .dashboard-page .empty-state{color:#a6b4cf}
