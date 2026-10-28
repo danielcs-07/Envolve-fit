@@ -1,5 +1,6 @@
 
 import { auth, db } from "./firebase-config.js";
+import { generateCoachCode, normalizeCoachCode, validCoachCode } from "./coach-codes.mjs";
 
 import {
   signInWithEmailAndPassword,
@@ -13,6 +14,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  writeBatch,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
@@ -27,13 +29,23 @@ const submitButton = document.getElementById("submit-btn");
 const switchButton = document.getElementById("switch-btn");
 const switchText = document.getElementById("switch-text");
 const message = document.getElementById("auth-message");
+const roleGroup = document.getElementById("role-group");
+const coachCodeGroup = document.getElementById("trainer-code-group");
+const coachCodeInput = document.getElementById("trainer-code");
+const coachHint = document.getElementById("trainer-register-hint");
+const roleInputs = [...document.querySelectorAll('input[name="account-role"]')];
 
 let isRegistering = false;
 let isBusy = false;
 
-// O link de convite define qual treinador será responsável pelo aluno.
-const invitedTrainerId = new URLSearchParams(window.location.search).get("trainer") || "";
-const validTrainerInvite = /^[A-Za-z0-9_-]{10,128}$/.test(invitedTrainerId);
+// O link é apenas uma conveniência; também é possível digitar o código.
+const urlCode = normalizeCoachCode(new URLSearchParams(location.search).get("trainer"));
+if (validCoachCode(urlCode)) {
+  const student = roleInputs.find(input => input.value === "student");
+  if (student) student.checked = true;
+  coachCodeInput.value = urlCode;
+}
+const selectedRole = () => roleInputs.find(input => input.checked)?.value || "student";
 
 function showMessage(text, type = "") {
   message.textContent = text;
@@ -45,37 +57,28 @@ function showMessage(text, type = "") {
 }
 
 function updateForm() {
-  formTitle.textContent = isRegistering
-    ? "Crie sua conta"
-    : "Bem-vindo de volta!";
-
+  const trainer = selectedRole() === "trainer";
+  formTitle.textContent = isRegistering ? (trainer ? "Crie sua conta de treinador" : "Crie sua conta") : "Bem-vindo de volta!";
   formSubtitle.textContent = isRegistering
-    ? (validTrainerInvite
-      ? "Cadastro por convite. Seu treinador aprovará a conta após a inscrição."
-      : "Peça o link de cadastro ao seu treinador antes de criar uma conta.")
+    ? (trainer
+      ? "Abra seu espaço e receba um código exclusivo para vincular seus alunos."
+      : "Informe o código do seu treinador para criar sua conta.")
     : "Entre na sua conta para continuar evoluindo.";
-
   nameGroup.hidden = !isRegistering;
   nameInput.required = isRegistering;
-
-  passwordInput.autocomplete = isRegistering
-    ? "new-password"
-    : "current-password";
-
+  roleGroup.hidden = !isRegistering;
+  coachCodeGroup.hidden = !isRegistering || trainer;
+  coachHint.hidden = !isRegistering || !trainer;
+  coachCodeInput.required = isRegistering && !trainer;
+  passwordInput.autocomplete = isRegistering ? "new-password" : "current-password";
   submitButton.textContent = isRegistering
-    ? "Criar minha conta"
+    ? (trainer ? "Criar conta de treinador" : "Criar conta de aluno")
     : "Entrar na minha conta";
-
-  switchText.textContent = isRegistering
-    ? "Já possui uma conta?"
-    : "Ainda não tem uma conta?";
-
-  switchButton.textContent = isRegistering
-    ? "Fazer login"
-    : "Criar conta";
-
+  switchText.textContent = isRegistering ? "Já possui uma conta?" : "Ainda não tem uma conta?";
+  switchButton.textContent = isRegistering ? "Fazer login" : "Criar conta";
   showMessage("");
 }
+roleInputs.forEach(input => input.addEventListener("change", updateForm));
 
 function redirectToDashboard(role) {
   const destination = role === "trainer"
@@ -105,50 +108,69 @@ switchButton.addEventListener("click", () => {
 });
 
 async function registerStudent(email, password) {
-  if (!validTrainerInvite) {
-    throw new Error("Para criar sua conta, abra o link de convite enviado pelo treinador.");
-  }
   const name = nameInput.value.trim();
-
-  if (name.length < 2 || name.length > 100) {
-    throw new Error("Digite seu nome completo.");
+  if (name.length < 2 || name.length > 100) throw new Error("Digite seu nome completo.");
+  const code = normalizeCoachCode(coachCodeInput.value);
+  if (!validCoachCode(code)) throw new Error("Informe um código válido fornecido pelo treinador.");
+  // Um código inválido é identificado ANTES da criação do usuário no Firebase Auth.
+  const coachSnap = await getDoc(doc(db, "trainerCodes", code));
+  if (!coachSnap.exists() || typeof coachSnap.data().trainerId !== "string") {
+    throw new Error("Código de treinador não encontrado. Confira e tente novamente.");
   }
-
-  const credential = await createUserWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
-
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
   try {
     await setDoc(doc(db, "users", credential.user.uid), {
-      name,
-      email: credential.user.email,
-      role: "student",
-      active: false,
-      trainerId: invitedTrainerId,
+      name, email: credential.user.email,
+      role: "student", active: false,
+      trainerId: coachSnap.data().trainerId, trainerCode: code,
       createdAt: serverTimestamp()
     });
-
     await signOut(auth);
-
-    form.reset();
-    isRegistering = false;
-    updateForm();
-
-    showMessage(
-      "Conta criada! O treinador do seu convite poderá aprová-la em breve.",
-      "success"
-    );
-
+    form.reset(); isRegistering = false; updateForm();
+    showMessage("Conta criada! Aguarde a aprovação do seu treinador.", "success");
   } catch (error) {
     await signOut(auth).catch(() => {});
+    console.error("Erro ao registrar aluno:", error);
+    throw new Error("A conta de autenticação foi criada, mas o perfil não foi concluído. Procure o suporte antes de tentar criar outra.");
+  }
+}
 
-    console.error("Erro ao salvar perfil:", error);
-
-    throw new Error(
-      "A conta foi criada, mas não foi possível finalizar seu perfil. Entre em contato com o treinador."
-    );
+async function registerTrainer(email, password) {
+  const name = nameInput.value.trim();
+  if (name.length < 2 || name.length > 100) throw new Error("Digite seu nome completo.");
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  try {
+    let savedCode = "";
+    // O ID da coleção trainerCodes garante unicidade. Uma colisão extremamente rara
+    // ou concorrência rejeita o lote, sem sobrescrever um código de outro treinador.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const code = generateCoachCode(crypto.getRandomValues(new Uint8Array(12)));
+      const batch = writeBatch(db);
+      batch.set(doc(db, "users", credential.user.uid), {
+        name, email: credential.user.email, role: "trainer",
+        active: true, coachCode: code, createdAt: serverTimestamp()
+      });
+      batch.set(doc(db, "trainerCodes", code), {
+        trainerId: credential.user.uid, createdAt: serverTimestamp()
+      });
+      try {
+        await batch.commit();
+        savedCode = code;
+        break;
+      } catch (error) {
+        if (error.code !== "permission-denied" && error.code !== "already-exists")
+          throw error;
+        if (attempt === 3) throw error;
+      }
+    }
+    await signOut(auth);
+    form.reset(); isRegistering = false; updateForm();
+    showMessage("Conta de treinador criada! Seu código exclusivo é " + savedCode +
+      ". Entre com seu e-mail e senha para acessar o painel e copiá-lo.", "success");
+  } catch (error) {
+    await signOut(auth).catch(() => {});
+    console.error("Erro ao registrar treinador:", error);
+    throw new Error("A autenticação foi criada, mas não foi possível reservar o código. Não crie outra conta: entre em contato com o suporte para concluir o perfil.");
   }
 }
 
@@ -213,7 +235,8 @@ form.addEventListener("submit", async event => {
     const password = passwordInput.value;
 
     if (isRegistering) {
-      await registerStudent(email, password);
+      if (selectedRole() === "trainer") await registerTrainer(email, password);
+      else await registerStudent(email, password);
     } else {
       await login(email, password);
     }
