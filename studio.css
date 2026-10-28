@@ -503,3 +503,13 @@ button{cursor:pointer}
  .studio-library-card{gap:8px;padding:12px}
  .studio-library-figure{width:35px;height:35px;flex-basis:35px}
 }
+
+
+.studio-playlist-preview{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;min-height:43px;padding:10px 16px;font-size:12px;font-weight:800}
+.studio-playlist-preview[hidden],.studio-playlist-player[hidden]{display:none!important}
+.studio-playlist-player{width:100%;margin:10px 0 2px;border:1px solid var(--studio-edge);padding:5px;background:var(--studio-surface);border-radius:16px;overflow:hidden}
+.studio-playlist-player iframe{display:block;width:100%;min-height:300px;height:352px;border:0;border-radius:12px;background:#161e31}
+.studio-quick-actions .studio-action span{color:#6166dc}
+.dashboard-page .studio-calculator-card .outline-btn{color:#fff;background:#5268ea;border-color:#5268ea}
+.dashboard-page .studio-calculator-card .outline-btn:hover{background:#465ac8}
+:root[data-studio-theme="dark"] .studio-playlist-player{background:#1b2840}
