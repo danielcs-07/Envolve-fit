@@ -866,3 +866,30 @@
 .dashboard-page .primary-btn { background: #255bd7; color: white; }
 .dashboard-page .primary-btn:hover { background: #1b49b9; }
 .dashboard-page button:focus-visible, .dashboard-page a:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+
+
+/* Entrada na mesma identidade do painel, mantendo formulários e acessibilidade */
+.login-page { background: #eaf0fa; --lime: #7ab8ff; --ink: #112743; }
+.login-shell { background: #112743; box-shadow: 0 25px 70px rgba(17,39,67,.16); }
+.login-visual {
+  background: radial-gradient(circle at 76% 60%, rgba(103,163,243,.18), transparent 48%),
+    radial-gradient(circle at 13% 88%, rgba(100,175,255,.13), transparent 45%), #112743;
+}
+.login-visual::before { border-color: rgba(103,163,243,.07); box-shadow: 0 0 0 70px rgba(103,163,243,.025); }
+.login-visual::after { color: rgba(103,163,243,.05); }
+.login-visual-brand b, .login-visual-content h2 em { color: #90c8ff; }
+.login-page .brand-emblem, .login-page .visual-meter-mark { background: #79baff; color: #112743; }
+.login-page .visual-kicker { color: #abd3ff; background: rgba(103,163,243,.10); border-color: rgba(103,163,243,.35); }
+.login-visual-content > p, .visual-features { color: #c0d3e8; }
+.login-page .visual-meter small { color: #9ab5d2; }
+.login-page .visual-meter strong { color: #f5f9ff; }
+.login-page .visual-features span::before { color: #79baff; }
+.login-page .login-brand h1, .login-page .login-heading h2 { color: #193454; }
+.login-page .login-brand p, .login-page .login-heading p { color: #697d99; }
+.login-page .login-container { background: #fbfdff; }
+.login-page .form-group label { color: #273e5b; }
+.login-page .form-group input { border-color: #d7e3f2; color: #18314f; }
+.login-page .form-group input:focus { border-color: #639de4; box-shadow: 0 0 0 4px rgba(59,130,246,.12); }
+.login-page .login-card .primary-btn { background: #173e85; color: #fff; }
+.login-page .login-card .primary-btn:hover { background: #2559b5; }
+.login-page .password-toggle:hover { background: #eaf1ff; }
