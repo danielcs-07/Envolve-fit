@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
   <link rel="stylesheet" href="studio.css?v=20261028-polish-v2">
   <link rel="stylesheet" href="studio-navigation.css?v=20261028-dock-v1">
+  <link rel="stylesheet" href="studio-session.css?v=20261028-session-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -185,7 +186,7 @@
                   Descartar rascunho
                 </button>
                 <button id="close-workout" type="button" class="outline-btn">
-                  Fechar
+                  ↓ Minimizar
                 </button>
               </div>
             </div>
@@ -446,13 +447,26 @@
 
       </main>
 
+      <aside id="studio-session-banner" class="studio-session-banner" aria-label="Treino em andamento" hidden>
+        <span class="studio-session-pulse" aria-hidden="true"></span>
+        <div class="studio-session-details">
+          <small>SESSÃO EM ANDAMENTO</small>
+          <strong id="studio-session-name">Treino</strong>
+          <span id="studio-session-count">0 de 0 séries · 00:00:00</span>
+          <progress id="studio-session-progress" max="1" value="0" aria-label="Progresso do treino"></progress>
+        </div>
+        <button id="studio-resume-workout" type="button" class="studio-resume-button">
+          Continuar <span aria-hidden="true">↗</span>
+        </button>
+      </aside>
+
       <footer class="site-footer">
         © 2026 Evolve Fit • Um treino de cada vez 💙
       </footer>
     </div>
   </div>
 
-  <script type="module" src="aluno.js?v=20261028-polish-v2"></script>
+  <script type="module" src="aluno.js?v=20261028-session-v1"></script>
   <script defer src="studio-shell.js?v=20261028-v1"></script>
   <script defer src="studio-navigation.js?v=20261028-dock-v1"></script>
   <script defer src="studio-explore.js?v=20261028-v2"></script>
