@@ -909,6 +909,36 @@ function renderDashboard() {
       if (entry) feedbackBox.append(entry);
     });
   }
+  const attention = $("trainer-attention-list");
+  attention.replaceChildren();
+  const weekAgo = Date.now() - 7 * 86400000;
+  if (!students.length) {
+    attention.append(element("p", "empty-text", "Ainda não há alunos ativos."));
+  } else {
+    const ordered = students.map(student => {
+      const published = workouts.filter(w => w.studentId === student.id && w.status === "published");
+      const fresh = logs.some(log => log.studentId === student.id &&
+        ((log.createdAt?.seconds || 0) * 1000) >= weekAgo);
+      const priority = published.length ? (fresh ? 2 : 1) : 0;
+      return { student, published, fresh, priority };
+    }).sort((a,b) => a.priority - b.priority);
+    ordered.slice(0, 8).forEach(({student,published,fresh}) => {
+      const row = element("div", "studio-attention-row");
+      const avatar = element("span", "studio-attention-avatar",
+        (student.name || "A").trim().slice(0,1).toLocaleUpperCase("pt-BR"));
+      const info = element("div", "studio-attention-copy");
+      info.append(element("strong", "", student.name || "Aluno"));
+      info.append(element("small", "", published.length
+        ? published.length + " ficha" + (published.length > 1 ? "s publicadas" : " publicada")
+        : "Nenhuma ficha publicada"));
+      const status = element("span", "studio-attention-status",
+        !published.length ? "Sem ficha" :
+          fresh ? "Com registro recente" : "Sem treino nos últimos 7 dias");
+      status.dataset.state = !published.length ? "missing" : fresh ? "recent" : "idle";
+      row.append(avatar, info, status);
+      attention.append(row);
+    });
+  }
   const weekLogs = recentLogs(logs);
   [
     ["📅", "Treinos desta semana", String(weekLogs.length)],
