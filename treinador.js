@@ -16,7 +16,8 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  writeBatch
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
@@ -32,7 +33,6 @@ import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
 } from "./draft-storage.mjs";
 
-import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
 
 const $ = id => document.getElementById(id);
@@ -965,34 +965,40 @@ function renderDashboard() {
 }
 
 async function refreshData() {
-  const [userSnap, workoutSnap, logSnap, measureSnap] = await Promise.all([
-    getDocs(collection(db, "users")),
-    getDocs(collection(db, "workouts")),
-    getDocs(collection(db, "trainingLogs")),
-    getDocs(collection(db, "measurements"))
+  // Uma consulta sem filtros pode incluir documentos de outros treinadores.
+  // O backend deve validar estes vínculos nas regras do Firestore.
+  const [userSnap, workoutSnap] = await Promise.all([
+    getDocs(query(collection(db, "users"), where("trainerId", "==", currentUser.uid))),
+    getDocs(query(collection(db, "workouts"), where("trainerId", "==", currentUser.uid)))
   ]);
 
   students = userSnap.docs
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
-    .filter(user => user.role === "student" && user.active === true);
+    .filter(user => user.role === "student" && user.active === true &&
+      user.trainerId === currentUser.uid);
 
   workouts = workoutSnap.docs
     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
     .filter(workout => workout.trainerId === currentUser.uid)
-    .sort((a, b) =>
-      (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0)
-    );
+    .sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
 
-  logs = logSnap.docs
-    .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
-    .filter(log => students.some(student => student.id === log.studentId))
-    .sort((a, b) =>
-      (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-    );
+  // Logs e medidas antigos só possuem studentId; consultamos por aluno atribuído.
+  // Assim preservamos o histórico da Vitória após vincular seu perfil ao treinador.
+  const fetchAssigned = async collectionName => {
+    const groups = await Promise.all(students.map(student =>
+      getDocs(query(collection(db, collectionName), where("studentId", "==", student.id)))
+    ));
+    return groups.flatMap(group => group.docs.map(snapshot =>
+      ({ id: snapshot.id, ...snapshot.data() })));
+  };
+  const [ownLogs, ownMeasurements] = await Promise.all([
+    fetchAssigned("trainingLogs"),
+    fetchAssigned("measurements")
+  ]);
 
-  measurements = measureSnap.docs
-    .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
-    .filter(item => students.some(student => student.id === item.studentId));
+  logs = ownLogs.sort((a, b) =>
+    (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  measurements = ownMeasurements;
 
   workouts.sort(compareWorkoutDays);
   renderStudents();
@@ -1001,88 +1007,6 @@ async function refreshData() {
   renderProgress();
   renderDashboard();
 }
-
-
-async function ensureWeeklyDrafts() {
-  const refs = WEEKLY_DRAFTS.map(workout =>
-    doc(db, "workouts", `${WEEKLY_DRAFT_VERSION}-${currentUser.uid}-${workout.day}`));
-  const snapshot = await getDocs(collection(db, "workouts"));
-  const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
-  const batch = writeBatch(db);
-  let added = 0;
-  let updated = 0;
-  WEEKLY_DRAFTS.forEach((workout, index) => {
-    const saved = existing.get(refs[index].id);
-    if (saved) {
-      // Atualize somente vídeos faltantes nos rascunhos originais sem aluno.
-      // Fichas publicadas e fichas modificadas pelo treinador permanecem intactas.
-      if (saved.trainerId !== currentUser.uid || saved.studentId ||
-          saved.status !== "draft" ||
-          !Array.isArray(saved.exercises) ||
-          saved.exercises.length !== workout.exercises.length ||
-          !saved.exercises.every((ex, i) =>
-            ex.name === workout.exercises[i].name)) return;
-
-      const updatedExercises = saved.exercises.map((ex, i) =>
-        ex.video ? ex : { ...ex, video: workout.exercises[i].video });
-      if (!updatedExercises.some((ex, i) =>
-          ex.video !== saved.exercises[i].video)) return;
-
-      batch.update(refs[index], {
-        exercises: updatedExercises,
-        updatedAt: serverTimestamp()
-      });
-      updated++;
-      return;
-    }
-    batch.set(refs[index], {
-      ...workout,
-      trainerId: currentUser.uid,
-      studentId: "",
-      status: "draft",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    added++;
-  });
-  if (added || updated) await batch.commit();
-  return { added, updated };
-}
-
-
-const draftPanel = element("section", "panel-card");
-const draftMessage = element("p", "status-message", "Treino de segunda a sábado • aquecimento + 12, 10 e 8 • sem aluno vinculado.");
-draftMessage.setAttribute("role", "status");
-const importDraftsButton = element("button", "primary-btn", "Importar / atualizar vídeos dos 6 treinos");
-importDraftsButton.type = "button";
-draftPanel.append(element("h3", "", "Seu treino semanal"), draftMessage, importDraftsButton);
-$("workout-list").before(draftPanel);
-let importingDrafts = false;
-async function importWeeklyDrafts() {
-  if (!currentUser || importingDrafts) return;
-  importingDrafts = true;
-  importDraftsButton.disabled = true;
-  draftMessage.textContent = "Conferindo e salvando seus rascunhos...";
-  try {
-    const { added, updated } = await ensureWeeklyDrafts();
-    await refreshData();
-    draftMessage.textContent = added || updated
-      ? `${added} rascunho(s) criado(s) e ${updated} atualizado(s) com vídeos. Veja as fichas abaixo.`
-      : "Os rascunhos já têm vídeos ou foram personalizados/publicados; nada foi alterado.";
-    $("trainer-workout-search").value = "";
-    $("trainer-workout-status").value = "";
-    $("trainer-workout-student").value = "";
-    renderWorkouts();
-  } catch (error) {
-    console.error("Erro ao importar rascunhos:", error);
-    draftMessage.textContent = `Não foi possível importar: ${error.code || error.message || "erro desconhecido"}. Tente novamente ou informe esta mensagem.`;
-  } finally {
-    importingDrafts = false;
-    importDraftsButton.disabled = false;
-  }
-}
-importDraftsButton.onclick = importWeeklyDrafts;
-
 
 function accessError(message) {
   $("app").hidden = true;
@@ -1120,6 +1044,10 @@ onAuthStateChanged(auth, async user => {
     const profile = profileSnap.data();
     const name = profile.name || "Treinador";
 
+    // Cada treinador possui um endereço de convite diferente.
+    const inviteUrl = new URL("index.html", window.location.href);
+    inviteUrl.searchParams.set("trainer", user.uid);
+    $("trainer-invite-url").value = inviteUrl.href;
     $("welcome-name").textContent = name.split(" ")[0];
     $("profile-name").textContent = name;
     $("profile-email").textContent = user.email || "";
@@ -1132,7 +1060,6 @@ onAuthStateChanged(auth, async user => {
 
     try {
       await refreshData();
-      await importWeeklyDrafts();
       restoreTrainerSession();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -1183,6 +1110,27 @@ $("trainer-export-csv").addEventListener("click", () => {
     return;
   }
   downloadCsv("evolve-fit-historico.csv", rows);
+});
+
+$("trainer-copy-invite").addEventListener("click", async () => {
+  const button = $("trainer-copy-invite");
+  const status = $("trainer-invite-status");
+  const url = $("trainer-invite-url").value;
+  if (!currentUser || !url) return;
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
+    else {
+      $("trainer-invite-url").focus();
+      $("trainer-invite-url").select();
+      status.textContent = "Selecione e copie o link acima.";
+      return;
+    }
+    status.textContent = "✓ Link copiado. O aluno poderá criar a própria conta para sua aprovação.";
+  } catch (error) {
+    $("trainer-invite-url").focus();
+    $("trainer-invite-url").select();
+    status.textContent = "Copie o endereço selecionado acima.";
+  }
 });
 
 $("trainer-password-reset").addEventListener("click", async () => {
