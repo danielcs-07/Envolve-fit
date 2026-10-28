@@ -32,7 +32,6 @@ import {
 
 import { WEEKLY_DRAFTS, WEEKLY_DRAFT_VERSION } from "./treino-semanal.mjs";
 
-import { FIVE_DAY_PLAN, FIVE_DAY_PLAN_ID } from "./treino-cinco-dias.mjs";
 
 const $ = id => document.getElementById(id);
 
@@ -872,7 +871,6 @@ async function refreshData() {
 
   workouts.sort(compareWorkoutDays);
   renderStudents();
-  renderFiveDayStudents();
   renderWorkouts();
   renderLogs();
   renderProgress();
@@ -959,109 +957,6 @@ async function importWeeklyDrafts() {
   }
 }
 importDraftsButton.onclick = importWeeklyDrafts;
-
-
-const fiveDayPanel = element("section", "panel-card");
-const fiveDaySelect = document.createElement("select");
-fiveDaySelect.id = "five-day-student";
-const fiveDayLabel = element("label", "form-field", "Perfil que receberá os cinco treinos");
-fiveDayLabel.htmlFor = fiveDaySelect.id;
-fiveDayLabel.append(fiveDaySelect);
-const fiveDayMessage = element("p", "status-message", "Selecione o perfil da Vitória e publique as cinco fichas com os vídeos.");
-fiveDayMessage.setAttribute("role", "status");
-const fiveDayButton = element("button", "primary-btn", "Publicar os 5 treinos para o perfil selecionado");
-fiveDayButton.type = "button";
-fiveDayButton.disabled = true;
-const fiveDayPreview = document.createElement("details");
-fiveDayPreview.append(element("summary", "", "Conferir exercícios e vídeos"));
-FIVE_DAY_PLAN.forEach(workout => {
-  const section = element("div", "log-exercise");
-  section.append(element("h4", "", workout.name));
-  const list = document.createElement("ol");
-  workout.exercises.forEach(ex => {
-    const item = element("li");
-    const link = element("a", "", ex.name);
-    link.href = ex.video;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    item.append(link);
-    list.append(item);
-  });
-  section.append(list);
-  fiveDayPreview.append(section);
-});
-fiveDayPanel.append(element("h3", "", "Plano de cinco dias com vídeos"),
-  element("p", "muted", "Segunda: glúteo · Terça: ombros e costas · Quarta: quadríceps e glúteo · Quinta: bíceps e tríceps · Sexta: posterior e glúteo. Aquecimento + 12, 10 e 8."),
-  fiveDayPreview, fiveDayLabel, fiveDayButton, fiveDayMessage);
-$("workout-list").before(fiveDayPanel);
-let publishingFiveDays = false;
-function renderFiveDayStudents() {
-  const previous = fiveDaySelect.value;
-  fiveDaySelect.replaceChildren(new Option("Selecione o perfil da Vitória", ""));
-  students.forEach(student => fiveDaySelect.add(
-    new Option(`${student.name || "Aluno"} — ${student.email || student.id}`, student.id)));
-  if (students.some(student => student.id === previous)) fiveDaySelect.value = previous;
-  fiveDayButton.disabled = publishingFiveDays || !fiveDaySelect.value;
-}
-fiveDaySelect.onchange = () => {
-  fiveDayButton.disabled = publishingFiveDays || !fiveDaySelect.value;
-};
-fiveDayButton.onclick = async () => {
-  if (publishingFiveDays || !currentUser) return;
-  const student = students.find(item => item.id === fiveDaySelect.value);
-  if (!student) {
-    fiveDayMessage.textContent = "Selecione um aluno ativo antes de publicar.";
-    return;
-  }
-  publishingFiveDays = true;
-  fiveDayButton.disabled = true;
-  fiveDaySelect.disabled = true;
-  fiveDayMessage.textContent = `Salvando as fichas para ${student.name}...`;
-  try {
-    const profile = await getDoc(doc(db, "users", student.id));
-    if (!profile.exists() || profile.data().role !== "student" || profile.data().active !== true) {
-      throw new Error("Este perfil não está ativo como aluno.");
-    }
-    const snapshot = await getDocs(collection(db, "workouts"));
-    const existing = new Map(snapshot.docs.map(item => [item.id, item.data()]));
-    const batch = writeBatch(db);
-    const ids = [];
-    let added = 0;
-    FIVE_DAY_PLAN.forEach(workout => {
-      const id = `${FIVE_DAY_PLAN_ID}-${currentUser.uid}-${student.id}-${workout.day}`;
-      ids.push(id);
-      if (existing.has(id)) {
-        const saved = existing.get(id);
-        if (saved.studentId !== student.id || saved.trainerId !== currentUser.uid || saved.status !== "published") {
-          throw new Error("Uma ficha deste plano foi alterada. Confira em Meus treinos antes de publicar novamente.");
-        }
-        return;
-      }
-      batch.set(doc(db, "workouts", id), {
-        ...workout, trainerId: currentUser.uid, studentId: student.id,
-        status: "published", createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-      });
-      added++;
-    });
-    if (added) await batch.commit();
-    await refreshData();
-    if (!ids.every(id => workouts.some(w => w.id === id && w.studentId === student.id && w.status === "published"))) {
-      throw new Error("Não foi possível confirmar todas as fichas. Confira a lista e tente novamente.");
-    }
-    $("trainer-workout-search").value = "";
-    $("trainer-workout-status").value = "published";
-    $("trainer-workout-student").value = student.id;
-    renderWorkouts();
-    fiveDayMessage.textContent = `Confirmado: os 5 treinos estão publicados para ${student.name}, com vídeos. ${added ? "" : "Nenhuma ficha foi duplicada."}`;
-  } catch (error) {
-    console.error("Falha na publicação do plano:", error);
-    fiveDayMessage.textContent = `Não foi possível concluir: ${error.code || error.message}. Você pode tentar novamente sem duplicar as fichas.`;
-  } finally {
-    publishingFiveDays = false;
-    fiveDaySelect.disabled = false;
-    fiveDayButton.disabled = !fiveDaySelect.value;
-  }
-};
 
 
 function accessError(message) {
