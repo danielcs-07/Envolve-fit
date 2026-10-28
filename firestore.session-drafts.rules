@@ -23,58 +23,90 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "student";
     }
 
+    // Cada aluno pertence ao treinador registrado no próprio perfil.
+    // trainerId só é criado por convite ou alterado com privilégios administrativos.
+    function trainerOwnsStudent(studentId) {
+      return isTrainer()
+        && exists(/databases/$(database)/documents/users/$(studentId))
+        && get(/databases/$(database)/documents/users/$(studentId)).data.get("trainerId", "") == request.auth.uid;
+    }
+
+    function activeTrainerProfile(trainerId) {
+      return exists(/databases/$(database)/documents/users/$(trainerId))
+        && get(/databases/$(database)/documents/users/$(trainerId)).data.role == "trainer"
+        && get(/databases/$(database)/documents/users/$(trainerId)).data.active == true;
+    }
+
     match /users/{userId} {
       allow get: if signedIn()
-        && (request.auth.uid == userId || isTrainer());
+        && (request.auth.uid == userId ||
+          (isTrainer() && resource.data.get("trainerId", "") == request.auth.uid));
 
-      allow list: if isTrainer();
+      // Consultas precisam filtrar por trainerId == auth.uid; regras não filtram resultados.
+      allow list: if isTrainer()
+        && resource.data.get("trainerId", "") == request.auth.uid;
 
+      // O aluno se cadastra por um link que contém o UID do treinador.
+      // Ele não pode promover seu próprio papel nem aprovar a própria conta.
       allow create: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.keys().hasOnly([
-          "name", "email", "role", "active", "createdAt"
+          "name", "email", "role", "active", "createdAt", "trainerId"
         ])
         && request.resource.data.keys().hasAll([
-          "name", "email", "role", "active", "createdAt"
+          "name", "email", "role", "active", "createdAt", "trainerId"
         ])
         && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 100
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.role == "student"
         && request.resource.data.active == false
+        && request.resource.data.trainerId is string
+        && request.resource.data.trainerId.size() > 0
+        && activeTrainerProfile(request.resource.data.trainerId)
         && request.resource.data.createdAt == request.time;
 
       allow update: if isTrainer()
         && resource.data.role == "student"
-        && request.resource.data.diff(resource.data)
-          .affectedKeys().hasOnly(["active"])
+        && resource.data.get("trainerId", "") == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["active"])
         && request.resource.data.active is bool;
 
       allow delete: if false;
     }
 
     match /workouts/{workoutId} {
-      allow read: if isTrainer()
+      allow read: if (isTrainer() && resource.data.trainerId == request.auth.uid)
         || (isStudent()
           && resource.data.studentId == request.auth.uid
           && resource.data.status == "published");
 
       allow create: if isTrainer()
         && request.resource.data.trainerId == request.auth.uid
-        && request.resource.data.status in ["draft", "published"];
+        && request.resource.data.studentId is string
+        && (request.resource.data.studentId == "" ||
+          trainerOwnsStudent(request.resource.data.studentId))
+        && request.resource.data.status in ["draft", "published"]
+        && (request.resource.data.status != "published" ||
+          request.resource.data.studentId != "");
 
       allow update: if isTrainer()
         && resource.data.trainerId == request.auth.uid
         && request.resource.data.trainerId == resource.data.trainerId
-        && request.resource.data.status in ["draft", "published"];
+        && request.resource.data.studentId is string
+        && (request.resource.data.studentId == "" ||
+          trainerOwnsStudent(request.resource.data.studentId))
+        && request.resource.data.status in ["draft", "published"]
+        && (request.resource.data.status != "published" ||
+          request.resource.data.studentId != "");
 
       allow delete: if isTrainer()
         && resource.data.trainerId == request.auth.uid;
     }
 
     match /trainingLogs/{logId} {
-      allow read: if isTrainer()
+      allow read: if trainerOwnsStudent(resource.data.studentId)
         || (isStudent()
           && resource.data.studentId == request.auth.uid);
 
@@ -123,7 +155,7 @@ service cloud.firestore {
     }
 
     match /measurements/{measurementId} {
-      allow read: if isTrainer()
+      allow read: if trainerOwnsStudent(resource.data.studentId)
         || (isStudent()
           && resource.data.studentId == request.auth.uid);
 
