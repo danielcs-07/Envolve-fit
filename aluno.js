@@ -1137,18 +1137,16 @@ async function refreshData() {
   renderProgress();
 }
 
-$("training-form").onsubmit = async event => {
+$("training-form").onsubmit = event => {
   event.preventDefault();
+  if (!selectedWorkout || saving || feedbackOpen) return;
 
-  if (!selectedWorkout || saving) return;
   const rows = [...document.querySelectorAll("#training-exercises .series-row")];
   const completed = rows.filter(row => row.querySelector('[data-type="done"]')?.checked);
-
   if (!completed.length) {
     $("training-message").textContent = "Marque pelo menos uma série como concluída antes de salvar.";
     return;
   }
-
   for (const row of completed) {
     const weight = row.querySelector('[data-type="weight"]');
     const reps = row.querySelector('[data-type="reps"]');
@@ -1161,18 +1159,42 @@ $("training-form").onsubmit = async event => {
       return;
     }
   }
-
   if (completed.length < rows.length && !confirm(
     `Você marcou ${completed.length} de ${rows.length} séries. Salvar somente as concluídas?`
   )) return;
+  showFeedbackStep();
+};
 
+async function persistCompletedWorkout(feedback) {
+  if (saving || !selectedWorkout) return;
+  const rows = [...document.querySelectorAll("#training-exercises .series-row")];
+  const completed = rows.filter(row => row.querySelector('[data-type="done"]').checked);
+  if (!completed.length) {
+    $("feedback-validation").textContent = "Marque pelo menos uma série antes de finalizar.";
+    return;
+  }
+  for (const row of completed) {
+    const weight = Number(row.querySelector('[data-type="weight"]').value);
+    const reps = Number(row.querySelector('[data-type="reps"]').value);
+    if (!Number.isFinite(weight) || weight < 0 || weight > 1000 ||
+        !Number.isInteger(reps) || reps < 1 || reps > 1000 ||
+        row.querySelector('[data-type="weight"]').value.trim() === "" ||
+        row.querySelector('[data-type="reps"]').value.trim() === "") {
+      $("feedback-validation").textContent = "Revise suas séries: há cargas ou repetições inválidas.";
+      return;
+    }
+  }
   saving = true;
-  $("finish-workout").disabled = true;
-  $("training-message").textContent = "Salvando treino...";
-
+  $("feedback-submit").disabled = true;
+  $("feedback-skip").disabled = true;
+  $("feedback-back").disabled = true;
+  $("training-message").textContent = "Finalizando e salvando seu treino...";
+  let created = false;
+  let feedbackSaved = !feedback;
+  let durationSaved = false;
   try {
     const exercises = (selectedWorkout.exercises || []).map((exercise, index) => {
-      const group = document.querySelector(`[data-exercise-index="${index}"]`);
+      const group = document.querySelector('[data-exercise-index="' + index + '"]');
       const series = [...group.querySelectorAll(".series-row")]
         .filter(row => row.querySelector('[data-type="done"]').checked)
         .map(row => ({
@@ -1183,7 +1205,7 @@ $("training-form").onsubmit = async event => {
     }).filter(exercise => exercise.series.length);
 
     const finishedWorkoutId = selectedWorkout.id;
-    const durationSeconds = elapsedTrainingSeconds();
+    const durationSeconds = Math.min(604800, elapsedTrainingSeconds());
     const logData = {
       studentId: currentUser.uid,
       workoutId: finishedWorkoutId,
@@ -1191,32 +1213,66 @@ $("training-form").onsubmit = async event => {
       exercises,
       createdAt: serverTimestamp()
     };
+    // O formulário só é encerrado depois de o Firestore confirmar o registro.
     try {
-      await addDoc(collection(db, "trainingLogs"), { ...logData, durationSeconds });
+      await addDoc(collection(db, "trainingLogs"), {
+        ...logData, durationSeconds, ...(feedback ? { feedback } : {})
+      });
+      durationSaved = true;
+      feedbackSaved = true;
     } catch (error) {
-      // Permite salvar o treino com as regras antigas enquanto a atualização não é publicada.
       if (error.code !== "permission-denied") throw error;
-      await addDoc(collection(db, "trainingLogs"), logData);
+      // Compatibilidade com regras anteriores: o treino deve ser salvo de qualquer modo.
+      try {
+        await addDoc(collection(db, "trainingLogs"), { ...logData, durationSeconds });
+        durationSaved = true;
+      } catch (legacyError) {
+        if (legacyError.code !== "permission-denied") throw legacyError;
+        await addDoc(collection(db, "trainingLogs"), logData);
+      }
     }
+    created = true;
 
     removeDraft(localStore(), workoutKey(finishedWorkoutId));
+    removeDraft(localStore(), feedbackDraftKey(finishedWorkoutId));
     removeDraft(localStore(), studentKey("active-workout"));
     await removeCloudDraft();
     selectedWorkout = null;
     stopRestTimer();
     stopSessionClock();
     sessionStartedAt = 0;
+    clearFeedbackUI();
     $("active-workout").hidden = true;
-    await refreshData();
+
+    const notice = feedback && !feedbackSaved
+      ? "✓ Treino salvo, mas a avaliação não foi enviada: falta publicar as novas regras do Firebase."
+      : !durationSaved
+        ? "✓ Treino salvo. A duração ainda depende das novas regras do Firebase."
+        : feedbackSaved && feedback
+          ? "✓ Treino e avaliação enviados ao treinador!"
+          : "✓ Treino concluído e salvo!";
+    $("student-history-notice").textContent = notice;
+    $("student-history-notice").hidden = false;
+
+    try {
+      await refreshData();
+    } catch (reloadError) {
+      console.warn("Treino salvo; histórico será atualizado na próxima conexão.", reloadError);
+      $("student-history-notice").textContent += " Atualize o histórico quando houver conexão.";
+    }
     showTab("history");
   } catch (error) {
     console.error("Erro ao salvar treino:", error);
-    $("training-message").textContent = "Não foi possível salvar. Verifique sua conexão e tente novamente.";
+    $("training-message").textContent = created
+      ? "Treino salvo. Não foi possível atualizar a tela; confira o histórico."
+      : "Não foi possível salvar. Seus dados continuam no rascunho; verifique sua conexão e tente novamente.";
   } finally {
     saving = false;
-    $("finish-workout").disabled = false;
+    $("feedback-submit").disabled = false;
+    $("feedback-skip").disabled = false;
+    $("feedback-back").disabled = false;
   }
-};
+}
 
 $("measurement-form").onsubmit = async event => {
   event.preventDefault();
