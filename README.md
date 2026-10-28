@@ -4,6 +4,18 @@ Plataforma de acompanhamento de treino e evolução para **um treinador** e seus
 
 **Site:** https://danielcs-07.github.io/Envolve-fit/
 
+## Evolve Fit Studio — novo design responsivo
+
+- Nova identidade visual com tons de azul, lavanda e verde-água, cartões reformulados e navegação inferior no celular.
+- Modo claro, escuro ou automático nas preferências do perfil, salvo somente neste navegador.
+- Nova seção **Explorar** com guias gerais de treino, buscas de playlists no Spotify/YouTube Music e um link favorito salvo localmente. A música é reproduzida nos serviços externos, não dentro do Evolve Fit.
+- Painel do treinador com atalhos e **Modelos** que preenchem o formulário editável (corpo inteiro, superiores e inferiores) e **não publicam nada automaticamente**.
+- O histórico, as fichas, os cronômetros, o feedback, os registros de PR e as medidas continuam usando as estruturas anteriores.
+- A reforma **não altera registros existentes do Firestore e não publica regras do Firebase**. Recursos que dependam dos campos novos de feedback/duração ainda exigem revisar e publicar as regras apropriadas no Firebase Console.
+
+## Segurança da atualização
+Esta versão altera sobretudo HTML, CSS e JavaScript de apresentação. Modelos somente preenchem um formulário local, e não executam operações no banco até o treinador escolher salvar/publicar. Na passagem para múltiplos treinadores, é obrigatório separar acesso e permissões por treinador nas regras do Firestore antes do lançamento público.
+
 ## Aluno
 - Cria uma conta com e-mail e senha e aguarda aprovação.
 - Consulta fichas, calendário semanal e treino recomendado para hoje.
