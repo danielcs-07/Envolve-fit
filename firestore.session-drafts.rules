@@ -37,6 +37,271 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(trainerId)).data.active == true;
     }
 
+    function validTrainerCode(code) {
+      return code is string && code.matches('^EF-[A-HJ-NP-Z2-9]{12}
+
+    match /users/{userId} {
+      allow get: if signedIn()
+        && (request.auth.uid == userId ||
+          (isTrainer() && resource.data.get("trainerId", "") == request.auth.uid));
+
+      // Consultas precisam filtrar por trainerId == auth.uid; regras não filtram resultados.
+      allow list: if isTrainer()
+        && resource.data.get("trainerId", "") == request.auth.uid;
+
+      // Cadastro sem intermediários: o visitante escolhe aluno ou treinador.
+      // As regras validam todas as informações e impedem promover papéis depois.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time
+        && (
+          (
+            request.resource.data.keys().hasOnly([
+              "name", "email", "role", "active", "createdAt", "trainerId", "trainerCode"
+            ])
+            && request.resource.data.keys().hasAll([
+              "name", "email", "role", "active", "createdAt", "trainerId", "trainerCode"
+            ])
+            && request.resource.data.role == "student"
+            && request.resource.data.active == false
+            && validStudentCoach(request.resource.data)
+          )
+          ||
+          (
+            request.resource.data.keys().hasOnly([
+              "name", "email", "role", "active", "createdAt", "coachCode"
+            ])
+            && request.resource.data.keys().hasAll([
+              "name", "email", "role", "active", "createdAt", "coachCode"
+            ])
+            && request.resource.data.role == "trainer"
+            && request.resource.data.active == true
+            && validTrainerCode(request.resource.data.coachCode)
+            && existsAfter(/databases/$(database)/documents/trainerCodes/$(request.resource.data.coachCode))
+            && getAfter(/databases/$(database)/documents/trainerCodes/$(request.resource.data.coachCode)).data.trainerId == userId
+          )
+        );
+
+      allow update: if (
+        // O treinador só aprova alunos vinculados a ele.
+        isTrainer()
+        && resource.data.role == "student"
+        && resource.data.get("trainerId", "") == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["active"])
+        && request.resource.data.active is bool
+      ) || (
+        // Treinadores antigos podem gerar o próprio código sem alterar o papel.
+        signedIn()
+        && request.auth.uid == userId
+        && resource.data.role == "trainer"
+        && resource.data.active == true
+        && resource.data.get("coachCode", "") == ""
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["coachCode"])
+        && validTrainerCode(request.resource.data.coachCode)
+        && existsAfter(/databases/$(database)/documents/trainerCodes/$(request.resource.data.coachCode))
+        && getAfter(/databases/$(database)/documents/trainerCodes/$(request.resource.data.coachCode)).data.trainerId == userId
+      );
+
+      allow delete: if false;
+    }
+
+    match /workouts/{workoutId} {
+      allow read: if (isTrainer() && resource.data.trainerId == request.auth.uid)
+        || (isStudent()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == "published");
+
+      allow create: if isTrainer()
+        && request.resource.data.trainerId == request.auth.uid
+        && request.resource.data.studentId is string
+        && (request.resource.data.studentId == "" ||
+          trainerOwnsStudent(request.resource.data.studentId))
+        && request.resource.data.status in ["draft", "published"]
+        && (request.resource.data.status != "published" ||
+          request.resource.data.studentId != "");
+
+      allow update: if isTrainer()
+        && resource.data.trainerId == request.auth.uid
+        && request.resource.data.trainerId == resource.data.trainerId
+        && request.resource.data.studentId is string
+        && (request.resource.data.studentId == "" ||
+          trainerOwnsStudent(request.resource.data.studentId))
+        && request.resource.data.status in ["draft", "published"]
+        && (request.resource.data.status != "published" ||
+          request.resource.data.studentId != "");
+
+      allow delete: if isTrainer()
+        && resource.data.trainerId == request.auth.uid;
+    }
+
+    match /trainingLogs/{logId} {
+      allow read: if trainerOwnsStudent(resource.data.studentId)
+        || (isStudent()
+          && resource.data.studentId == request.auth.uid);
+
+      allow create: if isStudent()
+        && request.resource.data.keys().hasOnly([
+          "studentId", "workoutId", "workoutName", "exercises", "createdAt", "durationSeconds", "feedback"
+        ])
+        && request.resource.data.keys().hasAll([
+          "studentId", "workoutId", "workoutName", "exercises", "createdAt"
+        ])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.workoutId is string
+        && request.resource.data.workoutId.size() > 0
+        && request.resource.data.workoutName is string
+        && request.resource.data.workoutName.size() > 0
+        && request.resource.data.workoutName.size() <= 250
+        && request.resource.data.exercises is list
+        && request.resource.data.exercises.size() > 0
+        && request.resource.data.exercises.size() <= 100
+        && request.resource.data.createdAt == request.time
+        && (!request.resource.data.keys().hasAny(["durationSeconds"]) ||
+          (request.resource.data.durationSeconds is int &&
+           request.resource.data.durationSeconds >= 0 &&
+           request.resource.data.durationSeconds <= 604800))
+        && (!request.resource.data.keys().hasAny(["feedback"]) ||
+          (request.resource.data.feedback is map &&
+           request.resource.data.feedback.keys().hasOnly(["rating", "effort", "comment"]) &&
+           request.resource.data.feedback.keys().hasAll(["rating", "effort", "comment"]) &&
+           request.resource.data.feedback.rating is int &&
+           request.resource.data.feedback.rating >= 1 &&
+           request.resource.data.feedback.rating <= 5 &&
+           request.resource.data.feedback.effort in ["easy", "balanced", "hard"] &&
+           request.resource.data.feedback.comment is string &&
+           request.resource.data.feedback.comment.size() <= 500))
+        && exists(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        )
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        ).data.studentId == request.auth.uid
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
+        ).data.status == "published";
+
+      allow update, delete: if false;
+    }
+
+    match /measurements/{measurementId} {
+      allow read: if trainerOwnsStudent(resource.data.studentId)
+        || (isStudent()
+          && resource.data.studentId == request.auth.uid);
+
+      allow create: if isStudent()
+        && request.resource.data.keys().hasOnly([
+          "studentId", "weight", "height", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "studentId", "weight", "height", "createdAt"
+        ])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.weight is number
+        && request.resource.data.height is number
+        && request.resource.data.weight >= 1
+        && request.resource.data.weight <= 500
+        && request.resource.data.height >= 50
+        && request.resource.data.height <= 250
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    // Backup temporário do treino em andamento. Só o próprio aluno acessa.
+    match /sessionDrafts/{userId} {
+      allow get: if isStudent()
+        && request.auth.uid == userId;
+
+      allow list: if false;
+
+      allow create, update: if isStudent()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          "ownerId", "role", "data", "updatedAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "ownerId", "role", "data", "updatedAt"
+        ])
+        && request.resource.data.ownerId == userId
+        && request.resource.data.role == "student"
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.data is map
+        && request.resource.data.data.keys().hasOnly([
+          "workoutId", "workout", "exercises", "restDeadline",
+          "restPaused", "restRemaining", "restSelectedSeconds",
+          "restExerciseIndex", "restChoices", "sessionStartedAt"
+        ])
+        && request.resource.data.data.keys().hasAll([
+          "workoutId", "workout", "exercises", "restDeadline"
+        ])
+        && request.resource.data.data.workoutId is string
+        && request.resource.data.data.workoutId.size() > 0
+        && request.resource.data.data.workout is map
+        && request.resource.data.data.exercises is list
+        && request.resource.data.data.exercises.size() > 0
+        && request.resource.data.data.exercises.size() <= 100
+        && request.resource.data.data.restDeadline is number
+        && (!request.resource.data.data.keys().hasAny(["restPaused"]) ||
+          request.resource.data.data.restPaused is bool)
+        && (!request.resource.data.data.keys().hasAny(["restRemaining"]) ||
+          request.resource.data.data.restRemaining is number)
+        && (!request.resource.data.data.keys().hasAny(["restSelectedSeconds"]) ||
+          request.resource.data.data.restSelectedSeconds is number)
+        && (!request.resource.data.data.keys().hasAny(["restExerciseIndex"]) ||
+          request.resource.data.data.restExerciseIndex is int)
+        && (!request.resource.data.data.keys().hasAny(["restChoices"]) ||
+          request.resource.data.data.restChoices is map)
+        && (!request.resource.data.data.keys().hasAny(["sessionStartedAt"]) ||
+          request.resource.data.data.sessionStartedAt is number)
+        && exists(
+          /databases/$(database)/documents/workouts/$(request.resource.data.data.workoutId)
+        )
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.data.workoutId)
+        ).data.studentId == userId
+        && get(
+          /databases/$(database)/documents/workouts/$(request.resource.data.data.workoutId)
+        ).data.status == "published";
+
+      allow delete: if isStudent()
+        && request.auth.uid == userId
+        && (resource == null || resource.data.ownerId == userId);
+    }
+  }
+}
+);
+    }
+
+    // O código identifica o responsável pelo aluno, mas não concede acesso.
+    function validStudentCoach(data) {
+      return validTrainerCode(data.trainerCode)
+        && data.trainerId is string
+        && exists(/databases/$(database)/documents/trainerCodes/$(data.trainerCode))
+        && get(/databases/$(database)/documents/trainerCodes/$(data.trainerCode)).data.trainerId == data.trainerId
+        && activeTrainerProfile(data.trainerId);
+    }
+
+    // Código e perfil do treinador são criados em um único lote atômico.
+    match /trainerCodes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && validTrainerCode(code)
+        && request.resource.data.keys().hasOnly(["trainerId", "createdAt"])
+        && request.resource.data.keys().hasAll(["trainerId", "createdAt"])
+        && request.resource.data.trainerId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "trainer"
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.coachCode == code;
+      allow update, delete: if false;
+    }
+
     match /users/{userId} {
       allow get: if signedIn()
         && (request.auth.uid == userId ||
