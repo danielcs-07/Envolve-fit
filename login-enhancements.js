@@ -23,6 +23,10 @@ if (passwordInput) {
       toggle.setAttribute("aria-pressed", String(visible));
     });
 
-    field.append(toggle);
+    // Mantém o controle de visibilidade ancorado ao campo, não à página.
+    const inputWrapper = document.createElement("div");
+    inputWrapper.className = "password-input-wrap";
+    passwordInput.before(inputWrapper);
+    inputWrapper.append(passwordInput, toggle);
   }
 }
