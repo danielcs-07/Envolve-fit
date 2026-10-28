@@ -1,7 +1,3 @@
-## Ativação segura para vários treinadores
-
-**Não libere novos treinadores antes de seguir [SEGUNDO-TREINADOR.md](SEGUNDO-TREINADOR.md).** O cadastro de treinador passará a ser automático com código exclusivo, mas a proteção real dos dados só existirá após publicar as regras novas e vincular os alunos existentes, inclusive a Vitória, ao treinador original.
-
 # Evolve Fit 💪
 
 Plataforma de acompanhamento de treino e evolução para **um treinador** e seus alunos, com interface responsiva e dados sincronizados no Firebase.
@@ -60,7 +56,7 @@ Esta versão altera sobretudo HTML, CSS e JavaScript de apresentação. Modelos 
 - Pode solicitar redefinição de senha pelo próprio e-mail.
 
 ## Treinador
-- Aprova novos cadastros vinculados ao seu perfil na seção **Meus alunos**; copia seu link individual de convite.
+- Aprova novos cadastros na seção **Meus alunos**.
 - Cria, edita, publica e duplica fichas de treinamento.
 - Pesquisa treinos e alunos e usa filtros para localizar registros.
 - Consulta evolução individual por aluno, incluindo recordes pessoais por exercício e consistência semanal.
@@ -68,9 +64,9 @@ Esta versão altera sobretudo HTML, CSS e JavaScript de apresentação. Modelos 
 - Exporta registros filtrados de treino em CSV.
 
 ## Como usar
-1. O profissional abre **Criar conta**, seleciona **Sou treinador** e cria o próprio cadastro. O aplicativo gera um `coachCode` exclusivo (ex.: `EF-ABCDEF234567`). **Essa funcionalidade só estará disponível após publicar e validar as novas regras**, conforme [SEGUNDO-TREINADOR.md](SEGUNDO-TREINADOR.md).
-2. O aluno abre o link de convite ou informa o código do treinador ao selecionar **Sou aluno**.
-3. A conta é criada com `role: "student"`, `active: false`, `trainerCode` e `trainerId` do responsável pelo código. O vínculo é validado nas regras do Firestore.
+1. O treinador entra com a conta previamente configurada no Firebase Authentication e autorizada na coleção `users` com `role: "trainer"`, `active: true`.
+2. O aluno abre a página de login, escolhe **Criar conta** e se cadastra.
+3. A conta é criada com `role: "student"` e `active: false`.
 4. O treinador aprova o cadastro em **Meus alunos** e publica as fichas escolhendo o aluno destinatário.
 5. O aluno abre **Meus treinos**, preenche as séries concluídas, toca em **Concluir treino** e pode avaliar antes de salvar definitivamente.
 
@@ -98,8 +94,7 @@ Em navegadores compatíveis com aplicativos web instaláveis, use **Instalar Evo
 - Testes automatizados em `tests/` com Node.js via GitHub Actions.
 
 ## Estrutura de dados
-- `users/{uid}`: `name`, `email`, `role`, `active`. Treinadores possuem `coachCode`; novos alunos possuem `trainerId` e `trainerCode`.
-- `trainerCodes/{codigo}`: `trainerId`, `createdAt`. O documento identifica o treinador dono do código e não pode ser modificado após a criação.
+- `users/{uid}`: `name`, `email`, `role`, `active`.
 - `workouts/{id}`: `trainerId`, `studentId`, `status`, `day`, `name`, `description`, `exercises`.
 - `trainingLogs/{id}`: `studentId`, `workoutId`, `workoutName`, `exercises`, `createdAt`, opcionalmente `durationSeconds` e `feedback` (nota, intensidade e comentário).
 - `measurements/{id}`: `studentId`, `weight`, `height`, `createdAt`.

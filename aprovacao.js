@@ -10,9 +10,7 @@ import {
   doc,
   getDoc,
   getDocs,
-  updateDoc,
-  query,
-  where
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const section = document.getElementById("tab-students");
@@ -48,11 +46,7 @@ async function loadPendingStudents() {
   showMessage("Carregando solicitações...");
 
   try {
-    if (!auth.currentUser) return;
-    const snapshot = await getDocs(query(
-      collection(db, "users"),
-      where("trainerId", "==", auth.currentUser.uid)
-    ));
+    const snapshot = await getDocs(collection(db, "users"));
 
     const pending = snapshot.docs
       .map(item => ({
@@ -61,8 +55,7 @@ async function loadPendingStudents() {
       }))
       .filter(item =>
         item.role === "student" &&
-        item.active === false &&
-        item.trainerId === auth.currentUser?.uid
+        item.active === false
       );
 
     showMessage("");
