@@ -310,6 +310,7 @@ const tabTitles = {
   workouts: "Meus treinos",
   history: "Histórico",
   progress: "Minha evolução",
+  explore: "Explorar",
   profile: "Meu perfil"
 };
 
