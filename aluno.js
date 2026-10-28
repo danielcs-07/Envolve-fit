@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { bestRepProgress } from "./studio-metrics.mjs";
 import { cleanWorkoutFeedback, validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import { workoutSnapshot, usableSnapshot, resumeWorkout } from "./session-recovery.mjs";
 import {
@@ -48,6 +49,7 @@ let restPaused = false;
 let restSelectedSeconds = 90;
 let restExerciseIndex = 0;
 let restChoices = {};
+let exerciseReplacements = {};
 let restStatus = "Escolha um exercício para descansar.";
 let sessionStartedAt = 0;
 let sessionInterval = null;
@@ -174,6 +176,7 @@ function saveActiveWorkoutDraft(immediate = false) {
     restSelectedSeconds,
     restExerciseIndex,
     restChoices,
+    exerciseReplacements,
     sessionStartedAt
   };
   const saved = writeDraft(localStore(), workoutKey(selectedWorkout.id), draft);
@@ -310,7 +313,7 @@ const tabTitles = {
   workouts: "Meus treinos",
   history: "Histórico",
   progress: "Minha evolução",
-  explore: "Explorar",
+  explore: "Ferramentas",
   profile: "Meu perfil"
 };
 
@@ -665,7 +668,7 @@ function weekSchedule() {
   } else {
     const wrapper = make("div", "today-inner");
     const content = make("div");
-    content.append(make("span", "today-kicker", "🌿 SUA ROTINA"));
+    content.append(make("span", "today-kicker", "SUA ROTINA"));
     content.append(make("h3", "", "Sem treino programado para hoje"));
     content.append(make("p", "", flexible.length
       ? "Você também tem treinos sem dia fixo para realizar quando combinado com seu treinador."
@@ -680,7 +683,25 @@ function weekSchedule() {
 
 function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   if (selectedWorkout) saveActiveWorkoutDraft();
-  selectedWorkout = workout;
+  const pendingDraft = ignoreDraft ? null : readDraft(localStore(), workoutKey(workout.id));
+  selectedWorkout = { ...workout, exercises: (workout.exercises || []).map(ex => ({ ...ex })) };
+  exerciseReplacements = {};
+  if (pendingDraft?.exerciseReplacements && typeof pendingDraft.exerciseReplacements === "object") {
+    Object.entries(pendingDraft.exerciseReplacements).forEach(([key, replacement]) => {
+      const index = Number(key), original = selectedWorkout.exercises[index];
+      if (!Number.isInteger(index) || !original || !replacement ||
+          original.name !== replacement.originalName || typeof replacement.name !== "string") return;
+      const alternative = workouts.flatMap(item => item.exercises || [])
+        .find(item => item.name === replacement.name);
+      if (!alternative) return;
+      exerciseReplacements[index] = { originalName: original.name, name: alternative.name };
+      Object.assign(original, {
+        name: alternative.name, video: alternative.video || "",
+        videoAlternative: alternative.videoAlternative || "",
+        notes: alternative.notes || ""
+      });
+    });
+  }
   sessionStartedAt = Date.now();
   restChoices = {};
   restExerciseIndex = 0;
@@ -690,7 +711,7 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   startSessionClock();
   writeDraft(localStore(), studentKey("active-workout"), {
     workoutId: workout.id,
-    workoutSnapshot: workoutSnapshot(workout)
+    workoutSnapshot: workoutSnapshot(selectedWorkout)
   });
 
   $("active-workout").hidden = false;
@@ -702,7 +723,7 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   container.replaceChildren();
 
   const previousLog = lastWorkoutLog(workout);
-  (workout.exercises || []).forEach((exercise, exerciseIndex) => {
+  (selectedWorkout.exercises || []).forEach((exercise, exerciseIndex) => {
     const card = make("article", "training-exercise");
 
     card.append(
@@ -720,6 +741,7 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
 
     if (/^[A-Za-z0-9_-]{11}$/.test(id)) {
       const videoDetails = document.createElement("details");
+      videoDetails.className = "studio-video-details";
       videoDetails.append(make("summary", "video-link", "▶ Ver execução"));
       const video = document.createElement("iframe");
       video.className = "exercise-video";
@@ -806,6 +828,77 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
     }
 
     card.append(sets);
+    const alternatives = [...new Map(workouts.flatMap(item => item.exercises || [])
+      .filter(item => item && typeof item.name === "string" && item.name.trim())
+      .map(item => [item.name.toLocaleLowerCase("pt-BR"), item])).values()]
+      .filter(item => item.name !== exercise.name);
+    if (alternatives.length) {
+      const picker = document.createElement("details");
+      picker.className = "studio-swap";
+      picker.append(make("summary", "", "⇄ Substituir nesta sessão"));
+      picker.append(make("p", "muted",
+        "Escolha um exercício de outra ficha já publicada. A ficha do treinador não será alterada."));
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", "Exercício alternativo");
+      select.append(new Option("Escolher alternativa", ""));
+      alternatives.forEach(ex => select.add(new Option(ex.name, ex.name)));
+      const apply = make("button", "outline-btn", "Aplicar substituição");
+      apply.type = "button";
+      apply.onclick = () => {
+        const chosen = alternatives.find(ex => ex.name === select.value);
+        if (!chosen || !selectedWorkout || feedbackOpen) return;
+        if ([...sets.querySelectorAll(".series-row")].some(row =>
+          row.querySelector('[data-type="weight"]').value !== "" ||
+          row.querySelector('[data-type="reps"]').value !== "" ||
+          row.querySelector('[data-type="done"]').checked) &&
+          !confirm("A troca apaga apenas as séries preenchidas deste exercício. Continuar?")) return;
+        const originalName = exerciseReplacements[exerciseIndex]?.originalName || exercise.name;
+        exerciseReplacements[exerciseIndex] = { originalName, name: chosen.name };
+        Object.assign(exercise, {
+          name: chosen.name, video: chosen.video || "", notes: chosen.notes || "",
+          videoAlternative: chosen.videoAlternative || ""
+        });
+        card.querySelector("h3").textContent = (exerciseIndex + 1) + ". " + chosen.name;
+        let notes = card.querySelector(".exercise-notes");
+        if (notes) notes.remove();
+        if (exercise.notes) {
+          notes = make("p", "exercise-notes", exercise.notes);
+          card.querySelector("h3").after(notes);
+        }
+        card.querySelector(".studio-video-details")?.remove();
+        const newVideoId = youtubeId(chosen.video);
+        if (/^[A-Za-z0-9_-]{11}$/.test(newVideoId)) {
+          const details = document.createElement("details");
+          details.className = "studio-video-details";
+          details.append(make("summary", "video-link", "▶ Ver execução"));
+          const frame = document.createElement("iframe");
+          frame.className = "exercise-video";
+          frame.src = "https://www.youtube-nocookie.com/embed/" + newVideoId;
+          frame.title = "Vídeo: " + chosen.name;
+          frame.loading = "lazy";
+          frame.allowFullscreen = true;
+          frame.referrerPolicy = "strict-origin-when-cross-origin";
+          details.append(frame);
+          card.insertBefore(details, rest);
+        }
+        card.querySelector(".studio-swap-notice")?.remove();
+        const label = make("p", "studio-swap-notice", "↪ Substituiu " + originalName + " somente nesta sessão");
+        picker.after(label);
+        sets.querySelectorAll(".series-row").forEach(row => {
+          row.querySelector('[data-type="weight"]').value = "";
+          row.querySelector('[data-type="reps"]').value = "";
+          row.querySelector('[data-type="done"]').checked = false;
+        });
+        updateSetProgress();
+        saveActiveWorkoutDraft(true);
+      };
+      picker.append(select, apply);
+      card.append(picker);
+    }
+    if (exerciseReplacements[exerciseIndex]) {
+      card.append(make("p", "studio-swap-notice", "↪ Substituiu " +
+        exerciseReplacements[exerciseIndex].originalName + " somente nesta sessão"));
+    }
     container.append(card);
   });
 
@@ -816,8 +909,8 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
     removeDraft(localStore(), feedbackDraftKey(workout.id));
     clearFeedbackUI();
   } else {
-    restoreFeedbackStep(workout);
-    restoreWorkoutDraft(workout);
+    restoreFeedbackStep(selectedWorkout);
+    restoreWorkoutDraft(selectedWorkout);
   }
   saveActiveWorkoutDraft(true);
   updateSetProgress();
@@ -1008,6 +1101,14 @@ function drawBars(container, entries, unit) {
   container.append(chart);
 }
 
+function renderStudentExerciseChart() {
+  const exercise = $("student-exercise-filter").value;
+  const metric = $("student-strength-metric").value;
+  drawBars($("student-strength-chart"),
+    metric === "reps" ? bestRepProgress(logs, exercise) : bestSetProgress(logs, exercise),
+    metric === "reps" ? "reps" : "kg");
+}
+
 function renderProgress() {
   const sorted = [...measurements].sort((a, b) =>
     (timestampDate(a.createdAt)?.getTime() || 0) -
@@ -1030,8 +1131,7 @@ function renderProgress() {
   if (names.includes(previous)) select.value = previous;
   else if (names.length) select.value = names[0];
 
-  const points = bestSetProgress(logs, select.value);
-  drawBars($("student-strength-chart"), points, "kg");
+  renderStudentExerciseChart();
 
   const latest = sorted.at(-1);
   $("stat-weight").textContent = latest ? `${latest.weight} kg` : "—";
@@ -1077,10 +1177,8 @@ function renderProgress() {
   });
 }
 
-$("student-exercise-filter").addEventListener("change", () => {
-  drawBars($("student-strength-chart"),
-    bestSetProgress(logs, $("student-exercise-filter").value), "kg");
-});
+$("student-exercise-filter").addEventListener("change", renderStudentExerciseChart);
+$("student-strength-metric").addEventListener("change", renderStudentExerciseChart);
 
 async function refreshData() {
   // A recuperação não depende de histórico/medidas responderem ao mesmo tempo.
@@ -1136,6 +1234,9 @@ async function refreshData() {
   renderWorkouts();
   renderHistory();
   renderProgress();
+  document.dispatchEvent(new CustomEvent("evolve:student-data", {
+    detail: { workouts, logs }
+  }));
 }
 
 $("training-form").onsubmit = event => {

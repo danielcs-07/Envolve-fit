@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { bestRepProgress } from "./studio-metrics.mjs";
 import { validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
@@ -793,6 +794,16 @@ function drawBars(container, entries, unit) {
   container.append(chart);
 }
 
+function renderTrainerExerciseChart() {
+  const studentId = $("trainer-progress-student").value;
+  const exercise = $("trainer-progress-exercise").value;
+  const metric = $("trainer-progress-metric").value;
+  const selectedLogs = logs.filter(log => log.studentId === studentId);
+  drawBars($("trainer-strength-chart"),
+    metric === "reps" ? bestRepProgress(selectedLogs, exercise) : bestSetProgress(selectedLogs, exercise),
+    metric === "reps" ? "reps" : "kg");
+}
+
 function renderProgress() {
   const studentId = $("trainer-progress-student").value;
   const student = students.find(s => s.id === studentId);
@@ -821,8 +832,7 @@ function renderProgress() {
   }).filter(item => item.value > 0);
 
   drawBars($("trainer-weight-chart"), weightPoints, "kg");
-  drawBars($("trainer-strength-chart"),
-    bestSetProgress(selectedLogs, select.value), "kg");
+  renderTrainerExerciseChart();
 
   const consistency = trainingConsistency(selectedLogs);
   // Use somente as fichas do aluno selecionado, evitando misturar seus PRs.
@@ -873,12 +883,8 @@ function renderProgress() {
   });
 }
 $("trainer-progress-student").addEventListener("change", renderProgress);
-$("trainer-progress-exercise").addEventListener("change", () => {
-  const selectedLogs = logs.filter(log =>
-    log.studentId === $("trainer-progress-student").value);
-  drawBars($("trainer-strength-chart"),
-    bestSetProgress(selectedLogs, $("trainer-progress-exercise").value), "kg");
-});
+$("trainer-progress-exercise").addEventListener("change", renderTrainerExerciseChart);
+$("trainer-progress-metric").addEventListener("change", renderTrainerExerciseChart);
 
 function renderDashboard() {
   $("stat-students").textContent = students.length;
@@ -901,6 +907,36 @@ function renderDashboard() {
         log.feedback, (student?.name || "Aluno") + " · " + (log.workoutName || "Treino")
       );
       if (entry) feedbackBox.append(entry);
+    });
+  }
+  const attention = $("trainer-attention-list");
+  attention.replaceChildren();
+  const weekAgo = Date.now() - 7 * 86400000;
+  if (!students.length) {
+    attention.append(element("p", "empty-text", "Ainda não há alunos ativos."));
+  } else {
+    const ordered = students.map(student => {
+      const published = workouts.filter(w => w.studentId === student.id && w.status === "published");
+      const fresh = logs.some(log => log.studentId === student.id &&
+        ((log.createdAt?.seconds || 0) * 1000) >= weekAgo);
+      const priority = published.length ? (fresh ? 2 : 1) : 0;
+      return { student, published, fresh, priority };
+    }).sort((a,b) => a.priority - b.priority);
+    ordered.slice(0, 8).forEach(({student,published,fresh}) => {
+      const row = element("div", "studio-attention-row");
+      const avatar = element("span", "studio-attention-avatar",
+        (student.name || "A").trim().slice(0,1).toLocaleUpperCase("pt-BR"));
+      const info = element("div", "studio-attention-copy");
+      info.append(element("strong", "", student.name || "Aluno"));
+      info.append(element("small", "", published.length
+        ? published.length + " ficha" + (published.length > 1 ? "s publicadas" : " publicada")
+        : "Nenhuma ficha publicada"));
+      const status = element("span", "studio-attention-status",
+        !published.length ? "Sem ficha" :
+          fresh ? "Com registro recente" : "Sem treino nos últimos 7 dias");
+      status.dataset.state = !published.length ? "missing" : fresh ? "recent" : "idle";
+      row.append(avatar, info, status);
+      attention.append(row);
     });
   }
   const weekLogs = recentLogs(logs);

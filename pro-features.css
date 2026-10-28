@@ -6,7 +6,7 @@
   margin-bottom: 22px;
   padding: 17px;
   background: #ffffff;
-  border: 1px solid #e2eadd;
+  border: 1px solid #dddfea;
   border-radius: 17px;
 }
 .filter-field {
@@ -15,7 +15,7 @@
   flex-direction: column;
   gap: 7px;
   min-width: min(100%, 160px);
-  color: #57705a;
+  color: #545973;
   font-size: 12px;
   font-weight: 800;
 }
@@ -25,21 +25,21 @@
   min-height: 44px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d9e6d4;
-  background: #fbfdf9;
+  border: 1px solid #d5d7e5;
+  background: #f9fafd;
   border-radius: 10px;
-  color: #203b2c;
+  color: #21253a;
   font-size: 13px;
 }
 .filter-field input:focus,
 .filter-field select:focus {
-  border-color: #86ba56;
-  box-shadow: 0 0 0 3px rgba(140, 192, 83, .15);
+  border-color: #5969b7;
+  box-shadow: 0 0 0 3px rgba(86,103,189, .15);
 }
 .toolbar-stat {
   align-self: center;
   font-size: 12px;
-  color: #617c65;
+  color: #5d6380;
   font-weight: 700;
   white-space: normal;
 }
@@ -57,12 +57,12 @@
   gap: 20px;
   padding: 26px 30px;
   border-radius: 20px;
-  background: #1b3228;
-  color: #f9fff1;
-  border: 1px solid #315241;
+  background: #1c1f31;
+  color: #f2f4fe;
+  border: 1px solid #323751;
 }
 .today-kicker {
-  color: #cdf568;
+  color: #6c82f1;
   letter-spacing: .13em;
   font-size: 10px;
   font-weight: 900;
@@ -73,24 +73,24 @@
   margin: 10px 0 7px;
 }
 .today-inner p {
-  color: #c1d5c6;
+  color: #c2c5d4;
   font-size: 12px;
   margin: 0;
   max-width: 530px;
 }
 .today-inner .primary-btn {
   flex-shrink: 0;
-  background: #cdf568;
-  color: #213721;
+  background: #6c82f1;
+  color: #222536;
 }
 .today-inner .primary-btn:hover {
-  background: #e2ff9c;
+  background: #a4b2f7;
 }
 .today-inner .outline-btn {
   flex-shrink: 0;
-  background: #294639;
-  color: #eff9e8;
-  border-color: #48634e;
+  background: #2a2e45;
+  color: #e9ebf8;
+  border-color: #484c63;
 }
 .weekly-panel {
   overflow: hidden;
@@ -110,22 +110,22 @@
   gap: 6px;
   padding: 12px 5px;
   text-align: center;
-  border: 1px solid #e0e9da;
+  border: 1px solid #dadde9;
   border-radius: 14px;
-  background: #f8fbf5;
+  background: #f5f6fb;
   color: #6d806e;
   transition: background .2s, border-color .2s, transform .2s;
 }
 .week-day:hover {
-  background: #edf8dc;
-  border-color: #c5e6a8;
+  background: #dde1f7;
+  border-color: #aab4e4;
   transform: translateY(-2px);
 }
 .week-day.is-today {
-  background: #cdf568;
-  border-color: #bbdf57;
-  color: #1c3627;
-  box-shadow: 0 7px 20px rgba(145, 190, 79, .18);
+  background: #6c82f1;
+  border-color: #5b70db;
+  color: #1d2135;
+  box-shadow: 0 7px 20px rgba(82,100,187, .18);
 }
 .week-day-name {
   font-size: 10px;
@@ -145,8 +145,8 @@
   padding: 6px 11px;
   margin-bottom: 13px;
   border-radius: 100px;
-  background: #eaf6dc;
-  color: #3a6b3f;
+  background: #dde1f5;
+  color: #3b436a;
   font-size: 11px;
   font-weight: 800;
 }
@@ -157,13 +157,13 @@
 }
 .last-session {
   margin: 14px 0;
-  color: #4d7d47;
+  color: #49517b;
   font-size: 12px;
   font-weight: 700;
 }
 .workout-progress-panel {
-  background: #f3f9eb;
-  border: 1px solid #ddeed0;
+  background: #ebeef9;
+  border: 1px solid #d1d6ed;
   border-radius: 16px;
   padding: 18px 19px;
   margin-bottom: 15px;
@@ -177,11 +177,11 @@
 }
 .progress-header strong {
   font-size: 13px;
-  color: #24442c;
+  color: #252a43;
 }
 .progress-header span {
   font-size: 12px;
-  color: #4e8246;
+  color: #485180;
   font-weight: 800;
 }
 #workout-progress {
@@ -191,18 +191,18 @@
   border: none;
   border-radius: 50px;
   overflow: hidden;
-  background: #dce9d2;
+  background: #d3d6e8;
 }
 #workout-progress::-webkit-progress-bar {
-  background: #dce9d2;
+  background: #d3d6e8;
   border-radius: 50px;
 }
 #workout-progress::-webkit-progress-value {
-  background: #5a964e;
+  background: #505b94;
   border-radius: 50px;
 }
 #workout-progress::-moz-progress-bar {
-  background: #5a964e;
+  background: #505b94;
   border-radius: 50px;
 }
 .workout-progress-panel .muted {
@@ -216,19 +216,19 @@
   flex-wrap: wrap;
   padding: 11px 17px;
   border-radius: 15px;
-  background: #172c21;
-  color: #b7ceba;
+  background: #181b2b;
+  color: #b8bbcd;
   margin-bottom: 20px;
 }
 .rest-timer strong {
-  color: #cdf568;
+  color: #6c82f1;
   font: 800 17px 'Outfit', Arial, sans-serif;
   letter-spacing: -.02em;
 }
 .rest-timer .outline-btn {
   background: transparent;
-  color: #d8f5c3;
-  border-color: #506d56;
+  color: #c5ccf4;
+  border-color: #4f546e;
   min-height: 36px;
   padding: 8px 12px;
 }
@@ -241,28 +241,28 @@
   grid-template-columns: 65px minmax(0, 1fr) minmax(0, 1fr) auto;
 }
 .series-row.set-done {
-  background: #eff9e4;
-  border-color: #c3e3a6;
+  background: #e5e8f8;
+  border-color: #a8b1e1;
 }
 .set-check {
   display: flex;
   gap: 6px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d1e1c9;
+  border: 1px solid #cacde0;
   border-radius: 10px;
   padding: 10px;
   min-height: 43px;
-  background: #f8fcf4;
+  background: #f4f5fc;
   font-size: 12px;
-  color: #3d6542;
+  color: #3e4464;
   cursor: pointer;
 }
 .set-check input[type="checkbox"] {
   width: 17px;
   min-width: 17px;
   height: 17px;
-  accent-color: #497a40;
+  accent-color: #424b78;
   margin: 0;
   padding: 0;
 }
@@ -281,7 +281,7 @@
   align-items: flex-start;
   gap: 7px;
   padding: 20px 23px;
-  border: 1px solid #e0eadd;
+  border: 1px solid #dddfea;
   border-radius: 19px;
   background: #ffffff;
   min-width: 0;
@@ -289,7 +289,7 @@
 .mini-stat-icon {
   display: grid;
   place-items: center;
-  background: #eef8e6;
+  background: #e7e9f7;
   width: 36px;
   height: 36px;
   border-radius: 11px;
@@ -301,7 +301,7 @@
   font-weight: 700;
 }
 .mini-stat strong {
-  color: #173125;
+  color: #181c30;
   font: 800 clamp(17px, 2.4vw, 25px) 'Outfit', Arial, sans-serif;
   overflow-wrap: anywhere;
 }
@@ -310,14 +310,14 @@
   align-items: center;
   border-radius: 100px;
   padding: 8px 13px;
-  background: #ecf8e1;
-  color: #3a7240;
+  background: #e2e5f7;
+  color: #3c4470;
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
 }
 .history-card {
-  border-left: 4px solid #c8ea83 !important;
+  border-left: 4px solid #8696e7 !important;
 }
 .compact-actions {
   margin-top: 0;
@@ -330,7 +330,7 @@
   margin-top: 19px;
 }
 .profile-card .status-message {
-  color: #437b43;
+  color: #454d79;
   text-align: center;
 }
 .login-help {
@@ -342,7 +342,7 @@
   border: 0;
   background: transparent;
   padding: 4px 0;
-  color: #377542;
+  color: #394373;
   font-size: 12px;
   font-weight: 800;
 }
@@ -352,8 +352,8 @@
 .install-app-btn {
   display: block;
   width: 100%;
-  background: #cdf568;
-  color: #1e3626;
+  background: #6c82f1;
+  color: #1f2235;
   border: 0;
   border-radius: 12px;
   padding: 11px 14px;
@@ -362,7 +362,7 @@
   margin-bottom: 11px;
 }
 .install-app-btn:hover {
-  background: #dcff8e;
+  background: #97a7f6;
 }
 .login-footer .install-app-btn {
   width: auto;
@@ -523,9 +523,9 @@
   gap: 11px;
   min-width: 0;
   padding: 18px 19px;
-  border: 1px solid #d9e8cf;
+  border: 1px solid #d0d4e7;
   border-radius: 17px;
-  background: linear-gradient(140deg, #fbfff7, #f2f9e9);
+  background: linear-gradient(140deg, #f8f9fe, #e9ecf9);
 }
 .pr-card-heading {
   display: flex;
@@ -534,7 +534,7 @@
 }
 .pr-card h4 {
   margin: 0;
-  color: #203b2b;
+  color: #21253a;
   font-size: clamp(14px, 1.5vw, 17px);
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -543,13 +543,13 @@
   align-self: flex-start;
   font-size: 11px;
   font-weight: 750;
-  color: #4b7145;
-  background: #e6f3da;
+  color: #464d70;
+  background: #dbdff2;
   border-radius: 25px;
   padding: 5px 9px;
 }
 .pr-card .pr-best {
-  color: #143d23;
+  color: #151c3c;
   font: 850 clamp(18px, 2.1vw, 24px) 'Outfit', Arial, sans-serif;
   overflow-wrap: anywhere;
 }
@@ -566,12 +566,12 @@
   white-space: normal;
 }
 .pr-gain {
-  color: #315d2f;
-  background: #daf1c8;
+  color: #30385c;
+  background: #c9d0f0;
 }
 .pr-baseline {
   color: #526753;
-  background: #e8efe6;
+  background: #e6e8ef;
 }
 .pr-date {
   margin: auto 0 0;
@@ -584,11 +584,11 @@
 .pr-more > summary {
   list-style-position: inside;
   width: fit-content;
-  border: 1px solid #cdddbc;
+  border: 1px solid #bdc2dc;
   padding: 11px 15px;
   border-radius: 11px;
-  color: #31572a;
-  background: #f1f9e8;
+  color: #2b3256;
+  background: #e9ebf8;
   font-weight: 750;
   font-size: 13px;
   cursor: pointer;
@@ -619,7 +619,7 @@
 
 /* Rascunhos locais sobrevivem à suspensão/recriação da aba no celular. */
 .autosave-status {
-  color: #386347;
+  color: #394062;
   font-size: 12px;
   font-weight: 650;
   line-height: 1.5;
@@ -636,7 +636,7 @@
   min-width: 0;
 }
 #discard-workout-draft {
-  border-color: #d3daca;
+  border-color: #cacdda;
   background: transparent;
   color: #5a685a;
 }
