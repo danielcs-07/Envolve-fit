@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
   <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
+  <link rel="stylesheet" href="studio.css?v=20261028-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -42,6 +43,9 @@
         <button class="nav-item" data-tab="progress">
           📈 Minha evolução
         </button>
+        <button class="nav-item" data-tab="explore">
+          ✦ Explorar
+        </button>
         <button class="nav-item" data-tab="profile">
           👤 Meu perfil
         </button>
@@ -58,7 +62,7 @@
     <div class="content-area">
       <header class="topbar">
         <div>
-          <p class="eyebrow">MINHA ÁREA</p>
+          <p class="eyebrow">ÁREA DO ALUNO · <span data-today-label></span></p>
           <h1 id="page-title">Início</h1>
         </div>
         <div class="topbar-user">
@@ -113,6 +117,11 @@
             </article>
           </div>
 
+          <section class="studio-quick-actions" aria-label="Atalhos">
+            <button type="button" data-nav-to="workouts" class="studio-action"><span>◉</span><strong>Treinar</strong><small>Começar uma sessão</small></button>
+            <button type="button" data-nav-to="progress" class="studio-action"><span>↗</span><strong>Evolução</strong><small>Ver meu progresso</small></button>
+            <button type="button" data-nav-to="explore" class="studio-action"><span>♫</span><strong>Playlists</strong><small>Música e conteúdos</small></button>
+          </section>
           <section class="dashboard-workout-highlight" id="student-today-feature" aria-live="polite"></section>
 
           <article class="panel-card pr-section">
@@ -336,6 +345,40 @@
           <div id="student-measurements" class="cards-list"></div>
         </section>
 
+        <section id="tab-explore" class="tab">
+          <div class="studio-section-lead">
+            <div><span class="studio-eyebrow">ALÉM DO TREINO</span><h2>Explore seu ritmo.</h2><p>Playlists, guias rápidos e recursos que acompanham sua rotina, sem atrapalhar o treino.</p></div>
+            <span class="studio-lead-mark" aria-hidden="true">✦</span>
+          </div>
+
+          <div class="studio-feature-heading"><div><h3>♫ Música para acompanhar</h3><p>Abrir playlists e buscas no seu aplicativo de música favorito.</p></div></div>
+          <div class="studio-music-grid">
+            <a class="studio-music-card studio-music-energy" data-external-link href="https://open.spotify.com/search/workout%20motivation"><span class="studio-music-symbol">↗</span><span class="studio-music-type">ENERGIA</span><strong>Hora de treinar</strong><small>Buscar no Spotify · workout</small><span class="studio-open-arrow">↗</span></a>
+            <a class="studio-music-card studio-music-focus" data-external-link href="https://music.youtube.com/search?q=musica%20treino%20academia"><span class="studio-music-symbol">♫</span><span class="studio-music-type">RITMO</span><strong>Seu som, seu foco</strong><small>Buscar no YouTube Music</small><span class="studio-open-arrow">↗</span></a>
+            <a class="studio-music-card studio-music-cardio" data-external-link href="https://open.spotify.com/search/cardio%20running"><span class="studio-music-symbol">◌</span><span class="studio-music-type">CARDIO</span><strong>Em movimento</strong><small>Buscar no Spotify · cardio</small><span class="studio-open-arrow">↗</span></a>
+          </div>
+          <article class="panel-card studio-my-playlist">
+            <div class="card-heading"><div><h3>Minha playlist favorita</h3><p class="muted">Salve um link no aparelho para acessar durante o treino.</p></div></div>
+            <form id="studio-playlist-form" class="studio-playlist-form">
+              <label for="studio-playlist-url">Link do Spotify, YouTube Music, YouTube ou Deezer</label>
+              <div class="studio-playlist-row"><input id="studio-playlist-url" type="url" placeholder="https://open.spotify.com/playlist/..." inputmode="url" autocomplete="off"><button type="submit" class="primary-btn">Salvar</button></div>
+              <p id="studio-playlist-status" class="muted" role="status"></p>
+              <a id="studio-playlist-open" class="outline-btn studio-playlist-open" data-external-link hidden>Abrir minha playlist ↗</a>
+            </form>
+          </article>
+
+          <div class="studio-feature-heading"><div><h3>◫ Biblioteca de treino</h3><p>Informações gerais para ajudar na organização e execução.</p></div></div>
+          <div class="studio-guide-grid">
+            <details class="studio-guide"><summary><span>01</span><strong>Preparação</strong><small>Aquecimento e início da sessão</small></summary><p>Comece com movimentos e cargas adequados à atividade. Ajuste o aquecimento de acordo com as orientações do seu treinador e suas condições do dia.</p></details>
+            <details class="studio-guide"><summary><span>02</span><strong>Registro de séries</strong><small>Cargas, repetições e execução</small></summary><p>Registre o que realmente realizou. Consulte os vídeos e as observações da ficha quando precisar rever a execução. Priorize a técnica em vez de buscar recordes em toda sessão.</p></details>
+            <details class="studio-guide"><summary><span>03</span><strong>Descanso</strong><small>Como usar o cronômetro</small></summary><p>O tempo sugerido pelo treinador é uma referência. Você pode personalizar seu descanso e conversar com ele sobre mudanças na intensidade ou no desempenho.</p></details>
+            <details class="studio-guide"><summary><span>04</span><strong>Evolução</strong><small>Consistência e histórico</small></summary><p>Acompanhe suas séries concluídas, o histórico de cargas e as medidas ao longo do tempo. Compare tendências, não apenas um treino isolado.</p></details>
+            <details class="studio-guide"><summary><span>05</span><strong>Recuperação</strong><small>Rotina entre sessões</small></summary><p>Respeite os períodos de recuperação combinados com o treinador. Se sentir dor persistente, tontura ou outro sintoma preocupante, interrompa a atividade e procure orientação profissional.</p></details>
+            <details class="studio-guide"><summary><span>06</span><strong>Feedback</strong><small>Converse com seu treinador</small></summary><p>Ao concluir o treino, avalie a dificuldade e deixe um comentário. Isso ajuda o treinador a entender sua experiência e avaliar possíveis ajustes.</p></details>
+          </div>
+          <p class="studio-disclaimer">Conteúdos informativos, não substituem orientação profissional individualizada. Música é reproduzida nos aplicativos dos respectivos serviços.</p>
+        </section>
+
         <section id="tab-profile" class="tab">
           <div class="section-heading">
             <h2>👤 Meu perfil</h2>
@@ -348,6 +391,15 @@
             <button type="button" id="student-password-reset" class="outline-btn profile-action">Enviar link para redefinir senha</button>
             <p class="status-message" id="student-profile-message" role="status"></p>
           </article>
+          <article class="panel-card studio-settings">
+            <h3>Personalização</h3><p class="muted">Escolha o visual que preferir neste aparelho.</p>
+            <div class="studio-theme-options" role="group" aria-label="Tema do aplicativo">
+              <button type="button" data-theme-option="light">☀ Claro</button>
+              <button type="button" data-theme-option="dark">☾ Escuro</button>
+              <button type="button" data-theme-option="system">◐ Sistema</button>
+            </div>
+            <p class="muted studio-small-note">Sua preferência fica salva apenas neste navegador.</p>
+          </article>
         </section>
 
       </main>
@@ -359,6 +411,8 @@
   </div>
 
   <script type="module" src="aluno.js?v=20261028-feedback-v1"></script>
+  <script defer src="studio-shell.js?v=20261028-v1"></script>
+  <script defer src="studio-explore.js?v=20261028-v1"></script>
   <script defer src="pwa.js"></script>
 </body>
 </html>
