@@ -767,6 +767,7 @@
 
 
 /* Evolve Fit Beta: avaliação clara, compacta e acessível */
+#finish-workout[hidden] { display: none !important; }
 .training-feedback[hidden], .feedback-history-notice[hidden] { display: none !important; }
 .training-feedback {
   margin: 22px 0;
