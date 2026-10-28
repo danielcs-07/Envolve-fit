@@ -599,7 +599,13 @@ function weekSchedule() {
 function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   if (selectedWorkout) saveActiveWorkoutDraft();
   selectedWorkout = workout;
+  sessionStartedAt = Date.now();
+  restChoices = {};
+  restExerciseIndex = 0;
+  restSelectedSeconds = suggestedRestSeconds(0);
+  restRemaining = restSelectedSeconds;
   stopRestTimer();
+  startSessionClock();
   writeDraft(localStore(), studentKey("active-workout"), {
     workoutId: workout.id,
     workoutSnapshot: workoutSnapshot(workout)
@@ -620,7 +626,7 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
     card.append(
       make("h3", "", `${exerciseIndex + 1}. ${exercise.name}`),
       make("p", "muted",
-        `${exercise.sets} séries • ${exercise.reps} repetições • ${exercise.rest} s de descanso`
+        `${exercise.sets} séries • ${exercise.reps} repetições • descanso sugerido: ${suggestedRestSeconds(exerciseIndex)}s`
       )
     );
 
@@ -661,9 +667,9 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
     }
 
     const rest = make("button", "outline-btn rest-action",
-      `⏱️ Iniciar descanso de ${Number(exercise.rest) || 60}s`);
+      `⏱️ Descansar · sugestão ${suggestedRestSeconds(exerciseIndex)}s`);
     rest.type = "button";
-    rest.onclick = () => startRestTimer(Number(exercise.rest) || 60);
+    rest.onclick = () => chooseRestExercise(exerciseIndex);
     card.append(rest);
 
     const sets = make("div", "series-grid");
@@ -725,6 +731,7 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   $("student-draft-status").textContent =
     "Seu preenchimento será salvo automaticamente neste aparelho.";
   if (!ignoreDraft) restoreWorkoutDraft(workout);
+  saveActiveWorkoutDraft(true);
   updateSetProgress();
   showTab("workouts");
   if (scroll) $("active-workout").scrollIntoView({ behavior: "smooth" });
@@ -734,6 +741,8 @@ $("close-workout").onclick = () => {
   saveActiveWorkoutDraft();
   selectedWorkout = null;
   stopRestTimer();
+  stopSessionClock();
+  sessionStartedAt = 0;
   removeDraft(localStore(), studentKey("active-workout"));
   void removeCloudDraft();
   $("active-workout").hidden = true;
@@ -843,6 +852,9 @@ function renderHistory() {
     const info = make("div");
     info.append(make("h3", "", log.workoutName || "Treino"));
     info.append(make("p", "muted", dateText(log.createdAt)));
+    if (Number.isFinite(log.durationSeconds) && log.durationSeconds >= 0) {
+      info.append(make("p", "muted", "⏱️ Duração: " + formatClock(log.durationSeconds, true)));
+    }
     const seriesCount = recordedSeriesCount(log);
     const indicator = make("span", "volume-pill",
       `${seriesCount} ${seriesCount === 1 ? "série registrada" : "séries registradas"}`);
@@ -1073,19 +1085,29 @@ $("training-form").onsubmit = async event => {
     }).filter(exercise => exercise.series.length);
 
     const finishedWorkoutId = selectedWorkout.id;
-    await addDoc(collection(db, "trainingLogs"), {
+    const durationSeconds = elapsedTrainingSeconds();
+    const logData = {
       studentId: currentUser.uid,
       workoutId: finishedWorkoutId,
       workoutName: selectedWorkout.name,
       exercises,
       createdAt: serverTimestamp()
-    });
+    };
+    try {
+      await addDoc(collection(db, "trainingLogs"), { ...logData, durationSeconds });
+    } catch (error) {
+      // Permite salvar o treino com as regras antigas enquanto a atualização não é publicada.
+      if (error.code !== "permission-denied") throw error;
+      await addDoc(collection(db, "trainingLogs"), logData);
+    }
 
     removeDraft(localStore(), workoutKey(finishedWorkoutId));
     removeDraft(localStore(), studentKey("active-workout"));
     await removeCloudDraft();
     selectedWorkout = null;
     stopRestTimer();
+    stopSessionClock();
+    sessionStartedAt = 0;
     $("active-workout").hidden = true;
     await refreshData();
     showTab("history");
