@@ -139,6 +139,7 @@ const tabTitles = {
   dashboard: "Visão geral",
   create: "Criar treino",
   workouts: "Meus treinos",
+  models: "Modelos",
   students: "Meus alunos",
   history: "Histórico",
   progress: "Evolução",
@@ -281,6 +282,53 @@ function renumberExercises() {
       `🏋️ Exercício ${index + 1}`;
   });
 }
+
+// Modelos de edição local. Não publicam nem modificam os treinos existentes.
+const studioModels = Object.freeze({
+  full: { name: "Corpo inteiro · modelo", description: "Modelo inicial para personalizar conforme avaliação e objetivos do aluno.",
+    exercises: [
+      ["Agachamento", 3, "8 a 12", 90],
+      ["Puxada na frente", 3, "8 a 12", 90],
+      ["Supino em máquina", 3, "8 a 12", 90],
+      ["Levantamento terra romeno", 3, "8 a 12", 90],
+      ["Prancha abdominal", 3, "30 segundos", 60]
+    ] },
+  upper: { name: "Membros superiores · modelo", description: "Modelo inicial. Confira técnica, volume e alternativas para cada aluno.",
+    exercises: [
+      ["Puxada na frente", 3, "8 a 12", 90],
+      ["Remada baixa", 3, "8 a 12", 90],
+      ["Supino em máquina", 3, "8 a 12", 90],
+      ["Desenvolvimento de ombros", 3, "8 a 12", 90],
+      ["Rosca direta", 3, "10 a 12", 60]
+    ] },
+  lower: { name: "Membros inferiores · modelo", description: "Modelo inicial. Ajuste de acordo com a avaliação e limitações do aluno.",
+    exercises: [
+      ["Agachamento", 3, "8 a 12", 90],
+      ["Leg press", 3, "8 a 12", 90],
+      ["Cadeira extensora", 3, "10 a 12", 60],
+      ["Cadeira flexora", 3, "10 a 12", 60],
+      ["Panturrilha em pé", 3, "12 a 15", 60]
+    ] }
+});
+
+document.querySelectorAll("[data-studio-model]").forEach(button => {
+  button.addEventListener("click", () => {
+    const model = studioModels[button.dataset.studioModel];
+    if (!model || !confirmReplaceTrainerDraft()) return;
+    clearForm();
+    $("workout-name").value = model.name;
+    $("workout-description").value = model.description;
+    $("workout-student").value = "";
+    $("exercise-list").replaceChildren();
+    model.exercises.forEach(([name, sets, reps, rest]) =>
+      addExercise({ name, sets, reps, rest, video: "", notes: "" }));
+    markTrainerDraftChanged();
+    $("form-message").textContent =
+      "Modelo carregado. Revise, personalize e selecione um aluno antes de publicar.";
+    showTab("create");
+    $("workout-name").focus();
+  });
+});
 
 $("add-exercise").onclick = () => {
   addExercise();

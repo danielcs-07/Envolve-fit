@@ -1,5 +1,5 @@
-const VERSION = "evolve-fit-v2-20261028-feedback";
-const STATIC = ["./offline.html", "./app-icon.svg", "./evolve-ui.css", "./style.css"];
+const VERSION = "evolve-fit-v3-20261028-studio";
+const STATIC = ["./offline.html", "./app-icon.svg", "./evolve-ui.css", "./style.css", "./studio.css"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(STATIC)));

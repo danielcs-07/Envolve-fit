@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
   <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
+  <link rel="stylesheet" href="studio.css?v=20261028-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -23,7 +24,7 @@
   <div id="app" class="app-layout" hidden>
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <div class="brand-icon">💪</div>
+        <div class="brand-icon">EF</div>
         <div>
           <h2>Evolve Fit</h2>
           <small>Área do treinador</small>
@@ -39,6 +40,9 @@
         </button>
         <button class="nav-item" data-tab="workouts">
           🏋️ Meus treinos
+        </button>
+        <button class="nav-item" data-tab="models">
+          ✦ Modelos
         </button>
         <button class="nav-item" data-tab="students">
           👥 Meus alunos
@@ -65,7 +69,7 @@
     <div class="content-area">
       <header class="topbar">
         <div>
-          <p class="eyebrow">PAINEL DE CONTROLE</p>
+          <p class="eyebrow">PAINEL DO TREINADOR · <span data-today-label></span></p>
           <h1 id="page-title">Visão geral</h1>
         </div>
         <div class="topbar-user">
@@ -89,7 +93,7 @@
                 ➕ Criar novo treino
               </button>
             </div>
-            <div class="hero-art">🏋️</div>
+            <div class="hero-art">◎</div>
           </div>
 
           <div class="stats-grid">
@@ -122,6 +126,12 @@
             </article>
           </div>
 
+          <section class="studio-quick-actions" aria-label="Ações rápidas">
+            <button type="button" data-nav-to="create" class="studio-action"><span>＋</span><strong>Nova ficha</strong><small>Criar treino</small></button>
+            <button type="button" data-nav-to="students" class="studio-action"><span>♧</span><strong>Alunos</strong><small>Gerenciar perfis</small></button>
+            <button type="button" data-nav-to="models" class="studio-action"><span>▧</span><strong>Modelos</strong><small>Agilizar a criação</small></button>
+            <button type="button" data-nav-to="history" class="studio-action"><span>↗</span><strong>Histórico</strong><small>Conferir sessões</small></button>
+          </section>
           <div id="trainer-weekly-stats" class="mini-stats-grid"></div>
 
           <div class="panel-grid">
@@ -269,6 +279,32 @@
           <div id="workout-list" class="cards-list"></div>
         </section>
 
+        <section id="tab-models" class="tab">
+          <div class="studio-section-lead">
+            <div><span class="studio-eyebrow">FERRAMENTAS DO TREINADOR</span><h2>Comece com um modelo.</h2>
+              <p>Escolha uma base de treino, revise exercícios, cargas e descanso e personalize para cada aluno. Nada é publicado automaticamente.</p></div>
+            <span class="studio-lead-mark" aria-hidden="true">▧</span>
+          </div>
+          <div class="studio-model-grid">
+            <article class="studio-model-card"><span class="studio-model-mark">01 / MODELO</span><span class="studio-model-art">◎</span><h3>Corpo inteiro</h3><p>Uma base versátil para montar sessões gerais com movimentos de membros superiores e inferiores.</p>
+              <div class="studio-model-tags"><span>5 exercícios</span><span>Editável</span></div>
+              <button type="button" data-studio-model="full" class="primary-btn">Usar este modelo ↗</button>
+            </article>
+            <article class="studio-model-card"><span class="studio-model-mark">02 / MODELO</span><span class="studio-model-art">↗</span><h3>Membros superiores</h3><p>Organize exercícios de empurrar, puxar e braços em uma ficha que pode ser adaptada.</p>
+              <div class="studio-model-tags"><span>5 exercícios</span><span>Editável</span></div>
+              <button type="button" data-studio-model="upper" class="primary-btn">Usar este modelo ↗</button>
+            </article>
+            <article class="studio-model-card"><span class="studio-model-mark">03 / MODELO</span><span class="studio-model-art">⌁</span><h3>Membros inferiores</h3><p>Uma estrutura inicial com exercícios para quadríceps, posteriores e panturrilhas.</p>
+              <div class="studio-model-tags"><span>5 exercícios</span><span>Editável</span></div>
+              <button type="button" data-studio-model="lower" class="primary-btn">Usar este modelo ↗</button>
+            </article>
+          </div>
+          <article class="panel-card studio-model-help">
+            <h3>Como funciona?</h3>
+            <p>O modelo preenche apenas o formulário no seu aparelho. Confira a adequação para seu aluno, indique os vídeos e escolha o destinatário antes de salvar ou publicar. Os treinos já cadastrados não são substituídos.</p>
+          </article>
+        </section>
+
         <section id="tab-students" class="tab">
           <div class="section-heading">
             <div>
@@ -366,7 +402,17 @@
             <p id="profile-email"></p>
             <span class="role-pill">Conta de treinador</span>
             <button type="button" id="trainer-password-reset" class="outline-btn profile-action">Enviar link para redefinir senha</button>
+            <button type="button" class="outline-btn studio-profile-logout" data-studio-logout>🚪 Sair da conta</button>
             <p class="status-message" id="trainer-profile-message" role="status"></p>
+          </article>
+          <article class="panel-card studio-settings">
+            <h3>Aparência do aplicativo</h3><p class="muted">Personalize seu painel neste navegador.</p>
+            <div class="studio-theme-options" role="group" aria-label="Tema do aplicativo">
+              <button type="button" data-theme-option="light">☀ Claro</button>
+              <button type="button" data-theme-option="dark">☾ Escuro</button>
+              <button type="button" data-theme-option="system">◐ Sistema</button>
+            </div>
+            <p class="muted studio-small-note">Esta preferência não altera os dados dos alunos.</p>
           </article>
         </section>
       </main>
@@ -378,6 +424,7 @@
   </div>
 
   <script type="module" src="treinador.js?v=20261028-feedback-v1"></script>
+  <script defer src="studio-shell.js?v=20261028-v1"></script>
   <script defer src="pwa.js"></script>
   <script type="module" src="aprovacao.js"></script>
 </body>
