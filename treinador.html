@@ -320,9 +320,21 @@
           <div class="section-heading">
             <div>
               <h2>👥 Meus alunos</h2>
-              <p>Alunos autorizados no Firebase.</p>
+              <p>Alunos vinculados à sua conta e autorizados no Firebase.</p>
             </div>
           </div>
+
+          <article class="panel-card trainer-invite-card">
+            <div class="card-heading">
+              <div><h3>Convide seus alunos</h3>
+                <p class="muted">Envie seu link de cadastro. Novas contas ficarão pendentes da sua aprovação.</p></div>
+            </div>
+            <div class="trainer-invite-controls">
+              <input id="trainer-invite-url" type="text" readonly aria-label="Link para cadastro com este treinador">
+              <button id="trainer-copy-invite" class="primary-btn" type="button">Copiar convite</button>
+            </div>
+            <p id="trainer-invite-status" class="muted" role="status"></p>
+          </article>
 
           <article class="panel-card">
             <p class="muted">
@@ -440,10 +452,10 @@
     </div>
   </div>
 
-  <script type="module" src="treinador.js?v=20261028-polish-v2"></script>
+  <script type="module" src="treinador.js?v=20261028-multitrainer-v1"></script>
   <script defer src="studio-shell.js?v=20261028-v1"></script>
   <script defer src="studio-navigation.js?v=20261028-dock-v1"></script>
   <script defer src="pwa.js"></script>
-  <script type="module" src="aprovacao.js"></script>
+  <script type="module" src="aprovacao.js?v=20261028-multitrainer-v1"></script>
 </body>
 </html>
