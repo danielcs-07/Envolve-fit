@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
   <link rel="stylesheet" href="pro-features.css?v=20261028-feedback-v1">
-  <link rel="stylesheet" href="studio.css?v=20261028-v1">
+  <link rel="stylesheet" href="studio.css?v=20261028-polish-v2">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -362,6 +362,12 @@
             <label class="filter-field">Exercício
               <select id="trainer-progress-exercise"><option value="">Escolha um exercício</option></select>
             </label>
+            <label class="filter-field">Métrica
+              <select id="trainer-progress-metric">
+                <option value="weight">Carga (kg)</option>
+                <option value="reps">Repetições</option>
+              </select>
+            </label>
           </div>
           <div id="trainer-progress-summary" class="mini-stats-grid"></div>
           <p class="muted progress-explainer">
@@ -423,7 +429,7 @@
     </div>
   </div>
 
-  <script type="module" src="treinador.js?v=20261028-feedback-v1"></script>
+  <script type="module" src="treinador.js?v=20261028-polish-v2"></script>
   <script defer src="studio-shell.js?v=20261028-v1"></script>
   <script defer src="pwa.js"></script>
   <script type="module" src="aprovacao.js"></script>
