@@ -4,6 +4,14 @@ Plataforma de acompanhamento de treino e evolução para **um treinador** e seus
 
 **Site:** https://danielcs-07.github.io/Envolve-fit/
 
+## Treino em andamento: minimizar, continuar e copiar série
+
+- O botão **Minimizar** na ficha do aluno deixa o treino em andamento, sem descartar séries, cargas, tempo ou feedback preenchido. A tela inicial exibe um cartão **Continuar** com cronômetro e progresso, visível também nas demais áreas do app.
+- Abrir novamente a mesma ficha enquanto está ativa retorna ao preenchimento existente, sem reiniciar o cronômetro. Ao tentar abrir outra ficha, o aluno é avisado e o rascunho anterior é salvo neste aparelho.
+- O botão **Repetir série anterior** copia apenas carga e repetições para a série atual. A caixa **Feita** continua exigindo confirmação manual, evitando contabilizar uma série não realizada.
+- A sessão ativa é mantida no armazenamento de recuperação atual do app. O recurso **Descartar rascunho** continua disponível quando o usuário quiser limpar deliberadamente o preenchimento, sem apagar registros já concluídos.
+- Nenhuma coleção ou regra do Firebase foi modificada nesta atualização. A confiabilidade do rascunho na nuvem depende das regras atuais publicadas no Firebase Console; a cópia local continua sendo a primeira proteção contra perda do preenchimento.
+
 ## Navegação moderna — aluno e treinador
 
 - No celular, o menu horizontal foi substituído por uma barra flutuante com **cinco ações fixas** e ícones vetoriais. Ela não exige rolagem horizontal.
