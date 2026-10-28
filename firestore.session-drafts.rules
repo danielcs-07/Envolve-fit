@@ -80,7 +80,7 @@ service cloud.firestore {
 
       allow create: if isStudent()
         && request.resource.data.keys().hasOnly([
-          "studentId", "workoutId", "workoutName", "exercises", "createdAt"
+          "studentId", "workoutId", "workoutName", "exercises", "createdAt", "durationSeconds"
         ])
         && request.resource.data.keys().hasAll([
           "studentId", "workoutId", "workoutName", "exercises", "createdAt"
@@ -95,6 +95,10 @@ service cloud.firestore {
         && request.resource.data.exercises.size() > 0
         && request.resource.data.exercises.size() <= 100
         && request.resource.data.createdAt == request.time
+        && (!request.resource.data.keys().hasAny(["durationSeconds"]) ||
+          (request.resource.data.durationSeconds is int &&
+           request.resource.data.durationSeconds >= 0 &&
+           request.resource.data.durationSeconds <= 604800))
         && exists(
           /databases/$(database)/documents/workouts/$(request.resource.data.workoutId)
         )
@@ -152,7 +156,9 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time
         && request.resource.data.data is map
         && request.resource.data.data.keys().hasOnly([
-          "workoutId", "workout", "exercises", "restDeadline"
+          "workoutId", "workout", "exercises", "restDeadline",
+          "restPaused", "restRemaining", "restSelectedSeconds",
+          "restExerciseIndex", "restChoices", "sessionStartedAt"
         ])
         && request.resource.data.data.keys().hasAll([
           "workoutId", "workout", "exercises", "restDeadline"
@@ -164,6 +170,18 @@ service cloud.firestore {
         && request.resource.data.data.exercises.size() > 0
         && request.resource.data.data.exercises.size() <= 100
         && request.resource.data.data.restDeadline is number
+        && (!request.resource.data.data.keys().hasAny(["restPaused"]) ||
+          request.resource.data.data.restPaused is bool)
+        && (!request.resource.data.data.keys().hasAny(["restRemaining"]) ||
+          request.resource.data.data.restRemaining is number)
+        && (!request.resource.data.data.keys().hasAny(["restSelectedSeconds"]) ||
+          request.resource.data.data.restSelectedSeconds is number)
+        && (!request.resource.data.data.keys().hasAny(["restExerciseIndex"]) ||
+          request.resource.data.data.restExerciseIndex is int)
+        && (!request.resource.data.data.keys().hasAny(["restChoices"]) ||
+          request.resource.data.data.restChoices is map)
+        && (!request.resource.data.data.keys().hasAny(["sessionStartedAt"]) ||
+          request.resource.data.data.sessionStartedAt is number)
         && exists(
           /databases/$(database)/documents/workouts/$(request.resource.data.data.workoutId)
         )

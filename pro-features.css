@@ -649,3 +649,118 @@
     flex: 1 1 auto;
   }
 }
+
+
+/* Duração e descanso personalizável durante o treino */
+.workout-time-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  border: 1px solid #d1def8;
+  border-radius: 16px;
+  background: #f1f6ff;
+  color: #203657;
+}
+.workout-time-panel > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.workout-time-label {
+  color: #4b6384;
+  font-size: 13px;
+  font-weight: 650;
+}
+.workout-time-panel strong {
+  font: 800 clamp(26px, 5vw, 34px) 'Outfit', Arial, sans-serif;
+  letter-spacing: -.035em;
+  color: #1b4ca3;
+  font-variant-numeric: tabular-nums;
+}
+.workout-time-panel p {
+  color: #5c6c84;
+  font-size: 12px;
+  max-width: 230px;
+  line-height: 1.5;
+  margin: 0;
+}
+.rest-timer {
+  display: block;
+  padding: 18px;
+  margin-bottom: 22px;
+  background: #f9fbff;
+  border: 1px solid #d7e3f4;
+  border-radius: 16px;
+  color: #193451;
+}
+.rest-timer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 14px;
+}
+.rest-timer-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.rest-timer-label {
+  font-size: 14px;
+  font-weight: 750;
+  color: #203657;
+}
+.rest-timer-heading small {
+  color: #596f88;
+  line-height: 1.45;
+}
+.rest-timer strong {
+  color: #1c56b1;
+  font: 800 30px 'Outfit', Arial, sans-serif;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rest-timer-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+.rest-timer-actions button {
+  margin: 0;
+  min-width: 0;
+  min-height: 42px;
+}
+.rest-timer .outline-btn {
+  background: #fff;
+  color: #27527d;
+  border-color: #c3d7ec;
+  padding: 8px 10px;
+}
+.rest-timer .outline-btn:hover {
+  background: #eaf2ff;
+}
+.rest-timer button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.rest-timer-hint {
+  color: #61738c;
+  font-size: 12px;
+  margin: 10px 0 0;
+  line-height: 1.4;
+}
+@media (max-width: 640px) {
+  .workout-time-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .workout-time-panel p { max-width: unset; }
+  .rest-timer-heading { align-items: flex-start; }
+  .rest-timer-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

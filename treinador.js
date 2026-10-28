@@ -662,6 +662,14 @@ function renderLogs() {
       element("h3", "", log.workoutName || "Treino"),
       element("p", "muted", `${student?.name || "Aluno"} · ${dateLabel(log.createdAt)}`)
     );
+    if (Number.isFinite(log.durationSeconds) && log.durationSeconds >= 0) {
+      const duration = Math.floor(log.durationSeconds);
+      const hours = Math.floor(duration / 3600);
+      const minutes = Math.floor(duration % 3600 / 60);
+      const seconds = duration % 60;
+      content.append(element("p", "muted",
+        "⏱️ Duração: " + (hours ? hours + "h " : "") + minutes + "min " + seconds + "s"));
+    }
     const seriesCount = recordedSeriesCount(log);
     const indicator = element("span", "volume-pill",
       `${seriesCount} ${seriesCount === 1 ? "série registrada" : "séries registradas"}`);
