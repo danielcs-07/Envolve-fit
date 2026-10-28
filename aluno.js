@@ -1028,14 +1028,23 @@ onAuthStateChanged(auth, async user => {
     $("loading").hidden = true;
     $("app").hidden = false;
 
+    // Reabra imediatamente a ficha salva antes de esperar consultas da rede.
+    // A sincronização de histórico e medidas continua em segundo plano.
+    const pending = readDraft(localStore(), studentKey("active-workout"));
+    let restoredLocally = false;
+    if (usableSnapshot(pending?.workoutSnapshot, pending?.workoutId)) {
+      restoredLocally = restoreStudentSession();
+    }
+
     try {
       await refreshData();
     } catch (error) {
       console.error("Dados temporariamente indisponíveis:", error);
       $("training-message").textContent =
-        "Sem conexão com o servidor. Se havia um treino em andamento, recuperaremos a cópia do aparelho.";
+        "Sem conexão com o servidor. A cópia local do seu treino continua disponível.";
     }
-    const restoredLocally = restoreStudentSession();
+
+    if (!restoredLocally) restoredLocally = restoreStudentSession();
     if (!restoredLocally) void restoreCloudDraft();
 
   } catch (error) {
