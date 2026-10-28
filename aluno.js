@@ -132,6 +132,9 @@ function saveMeasurementDraft() {
 
 function restoreStudentSession() {
   if (!currentUser || sessionRecovered) return;
+  // Não marcar como recuperada antes de os treinos terem sido carregados.
+  // Se o Firebase ainda estiver carregando, a recuperação será tentada novamente.
+  if (!Array.isArray(workouts)) return;
   sessionRecovered = true;
   const measurement = readDraft(localStore(), studentKey("measurements"));
   if (measurement) {
