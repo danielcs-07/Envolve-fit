@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { cleanWorkoutFeedback, validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import { workoutSnapshot, usableSnapshot, resumeWorkout } from "./session-recovery.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
@@ -39,6 +40,7 @@ let logs = [];
 let measurements = [];
 let selectedWorkout = null;
 let saving = false;
+let feedbackOpen = false;
 let restInterval = null;
 let restRemaining = 0;
 let restDeadline = 0;
@@ -309,6 +311,85 @@ const tabTitles = {
   history: "Histórico",
   progress: "Minha evolução",
   profile: "Meu perfil"
+};
+
+// O comentário é rascunhado localmente antes do envio definitivo do treino.
+function feedbackDraftKey(workoutId) {
+  return studentKey("feedback-" + workoutId);
+}
+
+function saveFeedbackDraft() {
+  if (!currentUser || !selectedWorkout || !feedbackOpen) return;
+  const rating = document.querySelector('input[name="workout-rating"]:checked')?.value || "";
+  const effort = document.querySelector('input[name="workout-effort"]:checked')?.value || "balanced";
+  writeDraft(localStore(), feedbackDraftKey(selectedWorkout.id), {
+    open: true, rating, effort, comment: $("workout-feedback-comment").value.slice(0, 500)
+  });
+}
+
+function clearFeedbackUI() {
+  feedbackOpen = false;
+  $("training-feedback").hidden = true;
+  $("finish-workout").hidden = false;
+  $("training-message").textContent = "";
+  $("feedback-validation").textContent = "";
+  $("workout-feedback-comment").value = "";
+  $("feedback-count").textContent = "0";
+  document.querySelectorAll('input[name="workout-rating"]').forEach(radio => { radio.checked = false; });
+  document.querySelector('input[name="workout-effort"][value="balanced"]').checked = true;
+}
+
+function restoreFeedbackStep(workout) {
+  clearFeedbackUI();
+  const draft = readDraft(localStore(), feedbackDraftKey(workout.id));
+  if (!draft || draft.open !== true) return;
+  if (["1", "2", "3", "4", "5"].includes(String(draft.rating))) {
+    const radio = document.querySelector('input[name="workout-rating"][value="' + draft.rating + '"]');
+    if (radio) radio.checked = true;
+  }
+  const chosenEffort = ["easy", "balanced", "hard"].includes(draft.effort) ? draft.effort : "balanced";
+  document.querySelector('input[name="workout-effort"][value="' + chosenEffort + '"]').checked = true;
+  $("workout-feedback-comment").value = typeof draft.comment === "string" ? draft.comment.slice(0, 500) : "";
+  $("feedback-count").textContent = String($("workout-feedback-comment").value.length);
+  feedbackOpen = true;
+  $("training-feedback").hidden = false;
+  $("finish-workout").hidden = true;
+  $("training-message").textContent = "Sua avaliação foi recuperada. Confirme para finalizar.";
+}
+
+function showFeedbackStep() {
+  feedbackOpen = true;
+  $("training-feedback").hidden = false;
+  $("finish-workout").hidden = true;
+  $("training-message").textContent = "";
+  $("feedback-validation").textContent = "";
+  saveFeedbackDraft();
+  $("training-feedback").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("training-feedback").addEventListener("change", saveFeedbackDraft);
+$("workout-feedback-comment").addEventListener("input", () => {
+  $("feedback-count").textContent = String($("workout-feedback-comment").value.length);
+  saveFeedbackDraft();
+});
+$("feedback-back").onclick = () => {
+  feedbackOpen = false;
+  $("training-feedback").hidden = true;
+  $("finish-workout").hidden = false;
+  $("training-message").textContent = "Seu treino continua aberto. Você pode editar as séries.";
+  if (selectedWorkout) removeDraft(localStore(), feedbackDraftKey(selectedWorkout.id));
+};
+$("feedback-skip").onclick = () => { void persistCompletedWorkout(null); };
+$("feedback-submit").onclick = () => {
+  const rating = document.querySelector('input[name="workout-rating"]:checked')?.value;
+  const effort = document.querySelector('input[name="workout-effort"]:checked')?.value;
+  const feedback = cleanWorkoutFeedback(rating, effort, $("workout-feedback-comment").value);
+  if (!feedback) {
+    $("feedback-validation").textContent = "Escolha de 1 a 5 estrelas ou use Pular avaliação.";
+    return;
+  }
+  $("feedback-validation").textContent = "";
+  void persistCompletedWorkout(feedback);
 };
 
 function make(tag, className = "", text = "") {
@@ -730,7 +811,13 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   $("training-message").textContent = "";
   $("student-draft-status").textContent =
     "Seu preenchimento será salvo automaticamente neste aparelho.";
-  if (!ignoreDraft) restoreWorkoutDraft(workout);
+  if (ignoreDraft) {
+    removeDraft(localStore(), feedbackDraftKey(workout.id));
+    clearFeedbackUI();
+  } else {
+    restoreFeedbackStep(workout);
+    restoreWorkoutDraft(workout);
+  }
   saveActiveWorkoutDraft(true);
   updateSetProgress();
   showTab("workouts");
@@ -739,6 +826,7 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
 
 $("close-workout").onclick = () => {
   saveActiveWorkoutDraft();
+  clearFeedbackUI();
   selectedWorkout = null;
   stopRestTimer();
   stopSessionClock();
@@ -753,6 +841,7 @@ $("discard-workout-draft").onclick = () => {
       !confirm("Descartar o preenchimento não enviado deste treino? Os registros já concluídos serão mantidos.")) return;
   const workout = selectedWorkout;
   removeDraft(localStore(), workoutKey(workout.id));
+  removeDraft(localStore(), feedbackDraftKey(workout.id));
   void removeCloudDraft();
   selectedWorkout = null;
   startWorkout(workout, { scroll: false, ignoreDraft: true });
@@ -860,6 +949,15 @@ function renderHistory() {
       `${seriesCount} ${seriesCount === 1 ? "série registrada" : "séries registradas"}`);
     heading.append(info, indicator);
     card.append(heading);
+    if (validWorkoutFeedback(log.feedback)) {
+      const note = make("div", "feedback-history-card");
+      note.append(
+        make("strong", "feedback-history-rating", feedbackStars(log.feedback) + " · " + feedbackEffort(log.feedback)),
+        make("span", "feedback-history-label", "Sua avaliação do treino")
+      );
+      if (log.feedback.comment) note.append(make("p", "feedback-history-comment", log.feedback.comment));
+      card.append(note);
+    }
 
     (log.exercises || []).forEach(exercise => {
       const block = make("div", "log-exercise");
