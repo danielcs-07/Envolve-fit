@@ -135,8 +135,7 @@ service cloud.firestore {
     // Backup temporário do treino em andamento. Só o próprio aluno acessa.
     match /sessionDrafts/{userId} {
       allow get: if isStudent()
-        && request.auth.uid == userId
-        && resource.data.ownerId == userId;
+        && request.auth.uid == userId;
 
       allow list: if false;
 
@@ -177,7 +176,7 @@ service cloud.firestore {
 
       allow delete: if isStudent()
         && request.auth.uid == userId
-        && resource.data.ownerId == userId;
+        && (resource == null || resource.data.ownerId == userId);
     }
   }
 }
