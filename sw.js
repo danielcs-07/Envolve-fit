@@ -1,4 +1,4 @@
-const VERSION = "evolve-fit-v2-20261021-rascunhos";
+const VERSION = "evolve-fit-v2-20261028-persistencia";
 const STATIC = ["./offline.html", "./app-icon.svg", "./evolve-ui.css", "./style.css"];
 
 self.addEventListener("install", event => {
