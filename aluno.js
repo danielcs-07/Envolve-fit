@@ -403,6 +403,30 @@ function make(tag, className = "", text = "") {
   return node;
 }
 
+function updateFloatingSession() {
+  const banner = $("studio-session-banner");
+  if (!banner) return;
+  const activeTab = document.querySelector(".tab.active")?.id;
+  const visibleInEditor = activeTab === "tab-workouts" && !$("active-workout").hidden;
+  banner.hidden = !selectedWorkout || visibleInEditor;
+  if (!selectedWorkout) return;
+  const rows = [...$("training-exercises").querySelectorAll(".series-row")];
+  const completed = rows.filter(row => row.querySelector('[data-type="done"]')?.checked).length;
+  $("studio-session-name").textContent = selectedWorkout.name || "Treino em andamento";
+  $("studio-session-count").textContent =
+    completed + " de " + rows.length + " séries · " + formatClock(elapsedTrainingSeconds(), true);
+  const bar = $("studio-session-progress");
+  bar.max = Math.max(1, rows.length);
+  bar.value = completed;
+}
+
+$("studio-resume-workout").addEventListener("click", () => {
+  if (!selectedWorkout) return;
+  $("active-workout").hidden = false;
+  showTab("workouts");
+  $("active-workout").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 function showTab(tab) {
   document.querySelectorAll(".tab").forEach(section => {
     section.classList.toggle("active", section.id === `tab-${tab}`);
@@ -414,6 +438,7 @@ function showTab(tab) {
 
   $("page-title").textContent = tabTitles[tab] || "Evolve Fit";
   rememberStudentTab(tab);
+  updateFloatingSession();
   window.scrollTo(0, 0);
 }
 
@@ -475,6 +500,7 @@ function updateSetProgress() {
   rows.forEach(row => {
     row.classList.toggle("set-done", Boolean(row.querySelector('[data-type="done"]')?.checked));
   });
+  updateFloatingSession();
 }
 
 function formatClock(totalSeconds, hours = false) {
@@ -492,6 +518,7 @@ function elapsedTrainingSeconds() {
 
 function updateSessionClock() {
   $("session-elapsed").textContent = formatClock(elapsedTrainingSeconds(), true);
+  updateFloatingSession();
 }
 
 function stopSessionClock() {
@@ -682,7 +709,15 @@ function weekSchedule() {
 }
 
 function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
-  if (selectedWorkout) saveActiveWorkoutDraft();
+  if (selectedWorkout?.id === workout.id && !ignoreDraft) {
+    $("active-workout").hidden = false;
+    showTab("workouts");
+    if (scroll) $("active-workout").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (selectedWorkout && selectedWorkout.id !== workout.id && scroll &&
+      !confirm("Há outro treino em andamento. O preenchimento será guardado neste aparelho. Deseja abrir outro treino?")) return;
+  if (selectedWorkout) saveActiveWorkoutDraft(true);
   const pendingDraft = ignoreDraft ? null : readDraft(localStore(), workoutKey(workout.id));
   selectedWorkout = { ...workout, exercises: (workout.exercises || []).map(ex => ({ ...ex })) };
   exerciseReplacements = {};
@@ -824,6 +859,26 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
       check.addEventListener("change", updateSetProgress);
       checkLabel.append(check, make("span", "", "Feita"));
       row.append(weightLabel, repsLabel, checkLabel);
+      if (i > 0) {
+        const repeat = make("button", "studio-repeat-set", "⧉ Repetir série anterior");
+        repeat.type = "button";
+        repeat.setAttribute("aria-label",
+          "Copiar carga e repetições da série anterior para a série " + (i + 1) + " de " + exercise.name);
+        repeat.addEventListener("click", () => {
+          const prior = sets.querySelectorAll(".series-row")[i - 1];
+          const kg = prior?.querySelector('[data-type="weight"]')?.value ?? "";
+          const count = prior?.querySelector('[data-type="reps"]')?.value ?? "";
+          if (kg.trim() === "" || count.trim() === "") {
+            $("student-draft-status").textContent =
+              "Preencha a carga e as repetições da série anterior para copiá-las.";
+            return;
+          }
+          weight.value = kg;
+          reps.value = count;
+          saveActiveWorkoutDraft(true);
+        });
+        row.append(repeat);
+      }
       sets.append(row);
     }
 
@@ -914,20 +969,18 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   }
   saveActiveWorkoutDraft(true);
   updateSetProgress();
+  $("active-workout").hidden = false;
   showTab("workouts");
   if (scroll) $("active-workout").scrollIntoView({ behavior: "smooth" });
 }
 
 $("close-workout").onclick = () => {
-  saveActiveWorkoutDraft();
-  clearFeedbackUI();
-  selectedWorkout = null;
-  stopRestTimer();
-  stopSessionClock();
-  sessionStartedAt = 0;
-  removeDraft(localStore(), studentKey("active-workout"));
-  void removeCloudDraft();
+  // Minimizar não encerra a sessão nem descarta os dados do rascunho.
+  // O cartão "Continuar" mantém o acesso ao mesmo preenchimento.
+  if (!selectedWorkout) return;
+  saveActiveWorkoutDraft(true);
   $("active-workout").hidden = true;
+  showTab("dashboard");
 };
 
 $("discard-workout-draft").onclick = () => {
@@ -1345,6 +1398,7 @@ async function persistCompletedWorkout(feedback) {
     sessionStartedAt = 0;
     clearFeedbackUI();
     $("active-workout").hidden = true;
+    updateFloatingSession();
 
     const notice = feedback && !feedbackSaved
       ? "✓ Treino salvo, mas a avaliação não foi enviada: falta publicar as novas regras do Firebase."
