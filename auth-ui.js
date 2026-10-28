@@ -31,6 +31,10 @@ const message = document.getElementById("auth-message");
 let isRegistering = false;
 let isBusy = false;
 
+// O link de convite define qual treinador será responsável pelo aluno.
+const invitedTrainerId = new URLSearchParams(window.location.search).get("trainer") || "";
+const validTrainerInvite = /^[A-Za-z0-9_-]{10,128}$/.test(invitedTrainerId);
+
 function showMessage(text, type = "") {
   message.textContent = text;
   message.className = "auth-message";
@@ -46,7 +50,9 @@ function updateForm() {
     : "Bem-vindo de volta!";
 
   formSubtitle.textContent = isRegistering
-    ? "Cadastre-se e aguarde a aprovação do treinador."
+    ? (validTrainerInvite
+      ? "Cadastro por convite. Seu treinador aprovará a conta após a inscrição."
+      : "Peça o link de cadastro ao seu treinador antes de criar uma conta.")
     : "Entre na sua conta para continuar evoluindo.";
 
   nameGroup.hidden = !isRegistering;
@@ -99,6 +105,9 @@ switchButton.addEventListener("click", () => {
 });
 
 async function registerStudent(email, password) {
+  if (!validTrainerInvite) {
+    throw new Error("Para criar sua conta, abra o link de convite enviado pelo treinador.");
+  }
   const name = nameInput.value.trim();
 
   if (name.length < 2 || name.length > 100) {
@@ -117,6 +126,7 @@ async function registerStudent(email, password) {
       email: credential.user.email,
       role: "student",
       active: false,
+      trainerId: invitedTrainerId,
       createdAt: serverTimestamp()
     });
 
@@ -127,7 +137,7 @@ async function registerStudent(email, password) {
     updateForm();
 
     showMessage(
-      "Conta criada com sucesso! Aguarde a aprovação do treinador para entrar.",
+      "Conta criada! O treinador do seu convite poderá aprová-la em breve.",
       "success"
     );
 
