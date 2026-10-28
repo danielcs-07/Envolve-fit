@@ -1,65 +1,45 @@
-# Liberação segura de um segundo treinador
+# Cadastro independente de treinadores — Evolve Fit
 
-Este documento prepara o Evolve Fit para **vários treinadores independentes** no mesmo projeto Firebase, sem expor a Vitória nem outros alunos a profissionais que não os acompanham.
+O Evolve Fit está sendo preparado para que **qualquer profissional convidado a testar a plataforma crie a própria conta como treinador**, sem cadastro manual em Firebase Authentication e sem compartilhar UID com o administrador.
 
-**Atenção:** o repositório só contém o código e as regras de referência. Não é possível publicar as regras do Firestore, criar a conta do treinador ou migrar vínculos alterando apenas arquivos no GitHub.
+**A alteração está em uma PR de preparação, não foi implantada no Firebase nem liberada aos treinadores.** As regras antigas deixam outros treinadores enxergarem a Vitória; não habilite um novo treinador com elas.
 
-## Por que a mudança é necessária?
+## Como o aplicativo vai funcionar
 
-As regras anteriores usam `isTrainer()` para permitir que qualquer treinador ativo leia todas as fichas, usuários, medidas e históricos. Uma conta nova com `role: "trainer"` e `active: true` **não deve ser liberada com essas regras antigas**.
+1. O profissional abre o Evolve Fit, toca em **Criar conta** e seleciona **Sou treinador**.
+2. Ele informa nome, e-mail e senha. O Firebase Authentication cria a credencial normalmente.
+3. O aplicativo gera automaticamente um código como `EF-ABCDEF234567` (apenas exemplo), usando 12 caracteres aleatórios seguros. Um lote atômico grava **`users/{uid}`** com `role: "trainer"`, `active: true` e `coachCode`, junto com **`trainerCodes/{code}`** que aponta para esse UID.
+4. O registro do código no próprio ID do documento, combinado com regras que proíbem sua atualização, **impede códigos iguais para treinadores diferentes**. Colisões raras são rejeitadas e tentadas novamente.
+5. O treinador entra com seu e-mail e senha. Em **Meus alunos**, vê seu código e o link para compartilhar. A conta de treinador existente também poderá gerar o próprio código automaticamente.
+6. O aluno escolhe **Sou aluno**, digita o código ou usa o link que já o preenche, cria sua conta e aguarda a aprovação.
+7. O aluno fica vinculado a um único treinador por `trainerId` e `trainerCode`. **Só esse treinador pode aprovar o aluno e acessar seus históricos, fichas e medidas.**
 
-A nova versão usa um único campo de vínculo no documento de cada aluno:
+Um código **não é senha e não dá acesso aos dados**: ele identifica para quem o pedido de cadastro vai. O aluno ainda precisa de credenciais próprias e da aprovação do treinador.
 
-```text
-users/{uidDoAluno}
-  name: "Nome do aluno"
-  email: "aluno@email.com"
-  role: "student"
-  active: true
-  trainerId: "UID_DO_TREINADOR_RESPONSAVEL"
-```
+## Preparação única para preservar alunos antigos
 
-O aluno só pode criar o próprio perfil como `student`, com `active: false` e `trainerId` vindo do convite. Nenhum cliente pode alterar o vínculo de um aluno existente; somente uma operação administrativa no Firebase pode transferi-lo.
+**Antes de publicar o novo código e as regras de isolamento em produção:**
 
-## Sequência de ativação — siga esta ordem
+1. Faça backup do Firestore e guarde cópia das regras atuais.
+2. No Firebase Console, em Authentication → Users, identifique **a conta do treinador responsável pelos alunos que já existem**. O UID pode ser consultado lá; você não precisa enviá-lo ao ChatGPT.
+3. Firestore Database → Data → `users`: abra cada **perfil de aluno já existente**, incluindo Vitória, e adicione apenas `trainerId` (string) com o UID do treinador que realmente o acompanha. Não altere `role`, `active`, fichas, histórico, séries ou medidas.
+4. Faça deploy do código da PR e publique as novas regras de `firestore.session-drafts.rules` **em uma janela controlada**, após conciliar quaisquer mudanças feitas diretamente no Console. Use o Firebase Emulator, se disponível, para testar segurança antes.
+5. Teste com sua conta atual: acesso à Vitória, suas fichas, histórico, rascunhos e medidas. Teste também o botão de geração do próprio código no painel.
+6. Crie uma conta de **treinador de teste diretamente pela nova tela**, sem usar Authentication → Add user. Verifique que aparece com código distinto e zero alunos.
+7. Cadastre um **aluno de teste** com o código do novo treinador, aprove-o e salve um treino de teste. Confirme que o novo treinador não consegue ler perfis, históricos e medidas da Vitória, nem por consultas nem pelo ID do documento.
+8. Só depois envie o link para um treinador real.
 
-1. **Antes de qualquer alteração, faça backup do Firestore e anote o UID do treinador atual**, em Firebase Console → Authentication → Users.
-2. Em Firestore Database → Data → `users`, abra **cada documento de aluno existente**, inclusive o da Vitória e os pendentes atuais, e adicione `trainerId` (tipo *string*) com o UID do treinador que atualmente o acompanha. **Não altere** `active`, `role`, `email`, fichas, séries ou históricos.
-3. Confira se o treinador original tem `users/{uid}` com `role: "trainer"` e `active: true`. **Não** adicione `trainerId` ao documento do próprio treinador.
-4. Publique o código desta revisão no GitHub Pages e verifique com o treinador original se consegue listar seus alunos e fichas. Ainda não crie nem ative a conta do segundo treinador.
-5. No Firebase Console → Firestore Database → Regras, compare o conteúdo atual com `firestore.session-drafts.rules` desta revisão. Se houver regras ou mudanças exclusivas do console, preserve-as e reconcilie-as antes de publicar. Publique as regras que exigem o vínculo `trainerId`.
-6. Teste, com a ferramenta de simulação ou ambiente de testes do Firebase, a permissão de cada treinador: aluno A só deve aparecer para treinador A; B não deve acessar o perfil, as fichas, medidas ou histórico de A, mesmo conhecendo o ID do documento. Confirme que o aluno continua acessando apenas os próprios dados.
-7. **Somente após confirmar as regras**, crie a conta do segundo treinador em Authentication → Users → Add user (e-mail e senha inicial). Copie o UID dessa nova conta.
-8. Em Firestore Database → Data → `users`, crie o documento com ID **exatamente igual ao UID** do novo treinador. Exemplo:
+## Regras importantes
 
-   ```text
-   name: "Nome do treinador"
-   email: "email@exemplo.com"
-   role: "trainer"
-   active: true
-   ```
+- Alunos cadastrados novos têm `trainerId` e `trainerCode` validados contra `trainerCodes/{code}`.
+- O treinador não pode alterar seu papel para outro, tomar o código de outro profissional ou mudar um aluno de treinador pela interface.
+- Os perfis de treinador criados pelo aplicativo têm `active: true` e acesso ao seu **próprio espaço vazio**. O cadastro de treinador é aberto como solicitado; antes de uma expansão pública, recomendo habilitar verificação de e-mail, App Check e proteção antiabuso.
+- O código usa 12 caracteres de um alfabeto de 32 caracteres (aproximadamente 60 bits de combinações), é reservado no Firestore e nunca é utilizado como autorização.
+- Fichas e históricos antigos **não são recriados**, apenas ficam visíveis ao profissional definido em `users/{aluno}.trainerId`.
+- Os treinos não são compartilhados automaticamente: cada documento `workouts` já tem `trainerId` e é limitado a esse responsável pelas novas regras.
+- O arquivo de regras no GitHub é apenas uma referência até ser **publicado no Firestore Console**. Alterar o repositório não publica nem testa regras de produção.
+- Caso a criação de uma conta no Auth seja concluída e a gravação do perfil falhe por falta de permissão, esse e-mail já terá uma conta de Auth. Será preciso corrigir as regras e concluir ou recuperar o perfil, em vez de criar outra conta.
 
-   Os campos `role` e `name` são do tipo *string* e `active` é *boolean*. Crie esse documento **pelo Console**, não por um formulário de cadastro público. Envie uma senha provisória por canal seguro e peça ao treinador para redefini-la.
+## Checagem final
 
-9. O novo treinador entra pelo mesmo endereço do Evolve Fit, acessa **Meus alunos** e usa **Copiar convite**. Ao abrir o link `index.html?trainer=UID`, o aluno cria a própria conta com vínculo ao treinador. A conta fica pendente (`active: false`) até a aprovação.
-10. Teste com um **aluno fictício do segundo treinador** antes de passar o link para alunos reais. Verifique os dois lados: o treinador novo não pode acessar a Vitória, e o original não pode acessar os alunos do novo treinador.
-
-## Compatibilidade e limitações
-
-- Os documentos antigos `workouts`, `trainingLogs` e `measurements` **não precisam ser regravados ou apagados**: os históricos continuam relacionados por `studentId`. Basta atualizar o documento do aluno em `users`.
-- Um aluno pertence a **um treinador por vez** nesta versão. Transferências devem ser realizadas por um administrador que examine a situação e o histórico; não há autotransferência pública.
-- Treinadores novos **não importam automaticamente** os rascunhos semanais do treinador original. Esse atalho antigo foi removido da interface e da inicialização. Os rascunhos já existentes continuam intactos.
-- O novo treinador usa o mesmo painel e os mesmos recursos de modelos, vídeos, fichas e acompanhamento. Ele começa com zero alunos até que alguém seja cadastrado pelo link e aprovado.
-- Um treinador pode copiar seu link e repassá-lo a quem desejar. O convite identifica o treinador, **não é uma senha nem autorização automática**: a nova conta permanece pendente e precisa de aprovação.
-- A proteção real exige **regras publicadas no Firestore**, não apenas filtros na interface. As regras antigas são abertas demais para liberar outra conta de treinador.
-- Este material prepara a revisão para implementação. **Ainda não substitui um teste no Firebase Emulator com as regras publicadas e duas contas de treinador.**
-
-## Verificação rápida após ativação
-
-1. Vitória acessa os mesmos treinos, séries e medidas de antes.
-2. Treinador original vê Vitória e os outros alunos que lhe pertencem.
-3. Segundo treinador inicia com a lista de alunos vazia.
-4. Segundo treinador não acessa documentos da Vitória por ID nem consegue listá-los.
-5. Um aluno criado por convite aparece **somente** na fila de aprovação do treinador que o convidou.
-6. O segundo treinador publica uma ficha para seu aluno de teste, que consegue visualizar e concluir o treino.
-7. Feedback, duração e salvamento dos históricos são avaliados segundo as regras efetivamente implantadas.
+A conta original continua com Vitória e os demais alunos vinculados; os profissionais novos começam com zero alunos; códigos são únicos; nenhum treinador vê dados de outro; alunos podem iniciar somente após aprovação; registros e medidas existentes continuam disponíveis.
