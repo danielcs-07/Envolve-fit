@@ -1,4 +1,4 @@
-const VERSION = "evolve-fit-v6-20261028-session";
+const VERSION = "evolve-fit-v7-20261028-multitrainer";
 const STATIC = ["./offline.html", "./app-icon.svg", "./evolve-ui.css", "./style.css", "./studio.css", "./studio-tools.js", "./studio-metrics.mjs", "./studio-navigation.css", "./studio-session.css", "./studio-navigation.js"];
 
 self.addEventListener("install", event => {
