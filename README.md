@@ -4,6 +4,15 @@ Plataforma de acompanhamento de treino e evolução para **um treinador** e seus
 
 **Site:** https://danielcs-07.github.io/Envolve-fit/
 
+## Navegação moderna — aluno e treinador
+
+- No celular, o menu horizontal foi substituído por uma barra flutuante com **cinco ações fixas** e ícones vetoriais. Ela não exige rolagem horizontal.
+- Aluno: Início, Histórico, Treinos (em destaque), Evolução e Mais. Dentro de Mais: Ferramentas e Perfil.
+- Treinador: Início, Alunos, Criar (em destaque), Fichas e Mais. Dentro de Mais: Modelos, Histórico, Evolução e Perfil.
+- O botão Mais abre uma folha inferior acessível, fechada por toque no fundo, botão de fechar ou Escape, com retorno de foco e suporte a modo escuro.
+- No computador, o menu lateral continua disponível com ícones vetoriais e rótulos claros. As ações de navegação reutilizam os botões e manipuladores antigos; não alteram o banco de dados.
+- As páginas carregam estilos próprios da navegação ao final da cascata, e o Service Worker utiliza uma nova versão de cache para renovar o visual em instalações PWA.
+
 ## Evolve Fit Studio — revisão da interface e Ferramentas
 
 - A identidade visual passou por uma revisão completa para remover elementos verdes antigos dos arquivos CSS e do ícone, mantendo uma paleta de azul, grafite e violeta.
