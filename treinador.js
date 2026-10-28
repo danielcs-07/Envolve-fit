@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { bestRepProgress } from "./studio-metrics.mjs";
 import { validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
@@ -793,6 +794,16 @@ function drawBars(container, entries, unit) {
   container.append(chart);
 }
 
+function renderTrainerExerciseChart() {
+  const studentId = $("trainer-progress-student").value;
+  const exercise = $("trainer-progress-exercise").value;
+  const metric = $("trainer-progress-metric").value;
+  const selectedLogs = logs.filter(log => log.studentId === studentId);
+  drawBars($("trainer-strength-chart"),
+    metric === "reps" ? bestRepProgress(selectedLogs, exercise) : bestSetProgress(selectedLogs, exercise),
+    metric === "reps" ? "reps" : "kg");
+}
+
 function renderProgress() {
   const studentId = $("trainer-progress-student").value;
   const student = students.find(s => s.id === studentId);
@@ -821,8 +832,7 @@ function renderProgress() {
   }).filter(item => item.value > 0);
 
   drawBars($("trainer-weight-chart"), weightPoints, "kg");
-  drawBars($("trainer-strength-chart"),
-    bestSetProgress(selectedLogs, select.value), "kg");
+  renderTrainerExerciseChart();
 
   const consistency = trainingConsistency(selectedLogs);
   // Use somente as fichas do aluno selecionado, evitando misturar seus PRs.
@@ -873,12 +883,8 @@ function renderProgress() {
   });
 }
 $("trainer-progress-student").addEventListener("change", renderProgress);
-$("trainer-progress-exercise").addEventListener("change", () => {
-  const selectedLogs = logs.filter(log =>
-    log.studentId === $("trainer-progress-student").value);
-  drawBars($("trainer-strength-chart"),
-    bestSetProgress(selectedLogs, $("trainer-progress-exercise").value), "kg");
-});
+$("trainer-progress-exercise").addEventListener("change", renderTrainerExerciseChart);
+$("trainer-progress-metric").addEventListener("change", renderTrainerExerciseChart);
 
 function renderDashboard() {
   $("stat-students").textContent = students.length;
