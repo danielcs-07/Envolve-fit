@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { workoutSnapshot, usableSnapshot, resumeWorkout } from "./session-recovery.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
 } from "./draft-storage.mjs";
@@ -46,30 +47,6 @@ let cloudDraftTimer = null;
 let cloudDraftGeneration = 0;
 let cloudDraftQueue = Promise.resolve();
 let cloudDraftAllowed = true;
-
-function workoutSnapshot(workout) {
-  return {
-    id: workout.id,
-    name: workout.name,
-    description: workout.description || "",
-    day: workout.day || "",
-    exercises: (workout.exercises || []).map(ex => ({
-      name: ex.name, sets: ex.sets, reps: ex.reps, rest: ex.rest,
-      notes: ex.notes || "", video: ex.video || "",
-      videoAlternative: ex.videoAlternative || ""
-    }))
-  };
-}
-
-function usableSnapshot(workout, expectedId) {
-  return workout && workout.id === expectedId &&
-    typeof workout.name === "string" &&
-    Array.isArray(workout.exercises) &&
-    workout.exercises.length > 0 &&
-    workout.exercises.length <= 100 &&
-    workout.exercises.every(ex => ex &&
-      typeof ex.name === "string" && Number(ex.sets) > 0 && Number(ex.sets) <= 20);
-}
 
 function draftCloudRef() {
   return doc(db, "sessionDrafts", currentUser.uid);
@@ -244,10 +221,7 @@ function restoreStudentSession() {
   }
 
   const pending = readDraft(localStore(), studentKey("active-workout"));
-  const active = pending?.workoutId &&
-    (workouts.find(workout => workout.id === pending.workoutId) ||
-      (usableSnapshot(pending.workoutSnapshot, pending.workoutId)
-        ? pending.workoutSnapshot : null));
+  const active = resumeWorkout(pending, workouts);
   if (active) {
     // Recupera a ficha do cache mesmo quando a conexão ao Firebase falha.
     startWorkout(active, { scroll: false });
