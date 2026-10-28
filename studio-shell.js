@@ -62,6 +62,9 @@
     document.querySelectorAll("[data-theme-option]").forEach(button => {
       button.addEventListener("click", () => setTheme(button.dataset.themeOption));
     });
+    document.querySelectorAll("[data-studio-logout]").forEach(button => {
+      button.addEventListener("click", () => document.getElementById("logout")?.click());
+    });
     document.querySelectorAll("[data-nav-to]").forEach(button => {
       button.addEventListener("click", () => {
         const target = document.querySelector('.nav-item[data-tab="' + button.dataset.navTo + '"]');
