@@ -42,6 +42,13 @@ let saving = false;
 let restInterval = null;
 let restRemaining = 0;
 let restDeadline = 0;
+let restPaused = false;
+let restSelectedSeconds = 90;
+let restExerciseIndex = 0;
+let restChoices = {};
+let restStatus = "Escolha um exercício para descansar.";
+let sessionStartedAt = 0;
+let sessionInterval = null;
 let sessionRecovered = false;
 let cloudDraftTimer = null;
 let cloudDraftGeneration = 0;
@@ -61,12 +68,20 @@ function scheduleCloudDraft(data, immediate = false) {
     cloudDraftQueue = cloudDraftQueue.catch(() => {}).then(async () => {
       if (generation !== cloudDraftGeneration || !cloudDraftAllowed || currentUser?.uid !== uid) return;
       try {
-        await setDoc(doc(db, "sessionDrafts", uid), {
-          ownerId: uid,
-          role: "student",
-          data,
-          updatedAt: serverTimestamp()
-        });
+        const record = { ownerId: uid, role: "student", data, updatedAt: serverTimestamp() };
+        try {
+          await setDoc(doc(db, "sessionDrafts", uid), record);
+        } catch (error) {
+          // Regras antigas no Firebase ainda aceitam o formato anterior.
+          if (error.code !== "permission-denied") throw error;
+          await setDoc(doc(db, "sessionDrafts", uid), {
+            ...record,
+            data: {
+              workoutId: data.workoutId, workout: data.workout,
+              exercises: data.exercises, restDeadline: data.restDeadline
+            }
+          });
+        }
         if (generation === cloudDraftGeneration && selectedWorkout) {
           $("student-draft-status").textContent =
             "✓ Progresso salvo neste aparelho e no Firebase.";
@@ -151,7 +166,13 @@ function saveActiveWorkoutDraft(immediate = false) {
     workoutId: selectedWorkout.id,
     workout: workoutSnapshot(selectedWorkout),
     exercises,
-    restDeadline
+    restDeadline,
+    restPaused,
+    restRemaining,
+    restSelectedSeconds,
+    restExerciseIndex,
+    restChoices,
+    sessionStartedAt
   };
   const saved = writeDraft(localStore(), workoutKey(selectedWorkout.id), draft);
   scheduleCloudDraft(draft, immediate);
@@ -191,9 +212,42 @@ function restoreWorkoutDraft(workout) {
       "Sua ficha mudou desde o último preenchimento. Nenhuma carga foi aplicada ao exercício errado.";
     return false;
   }
-  if (Number.isFinite(draft.restDeadline) && draft.restDeadline > Date.now()) {
-    startRestTimer(0, draft.restDeadline);
+  const now = Date.now();
+  if (Number.isFinite(draft.sessionStartedAt) &&
+      draft.sessionStartedAt > now - 7 * 24 * 3600000 &&
+      draft.sessionStartedAt <= now + 60000) {
+    sessionStartedAt = draft.sessionStartedAt;
   }
+  restChoices = {};
+  if (draft.restChoices && typeof draft.restChoices === "object" && !Array.isArray(draft.restChoices)) {
+    Object.entries(draft.restChoices).forEach(([key, value]) => {
+      const index = Number(key);
+      if (Number.isInteger(index) && index >= 0 &&
+          index < selectedWorkout.exercises.length &&
+          Number.isFinite(value) && value >= 15 && value <= 600) {
+        restChoices[index] = value;
+      }
+    });
+  }
+  restExerciseIndex = Number.isInteger(draft.restExerciseIndex) &&
+    draft.restExerciseIndex >= 0 && draft.restExerciseIndex < selectedWorkout.exercises.length
+    ? draft.restExerciseIndex : 0;
+  restSelectedSeconds = clampRestSeconds(
+    restChoices[restExerciseIndex] ?? draft.restSelectedSeconds ?? suggestedRestSeconds(restExerciseIndex)
+  );
+  if (draft.restPaused === true && Number.isFinite(draft.restRemaining) &&
+      draft.restRemaining > 0) {
+    restPaused = true;
+    restRemaining = Math.min(600, Math.ceil(draft.restRemaining));
+    restStatus = "Descanso pausado. Continue quando estiver pronto.";
+    renderRestTimer();
+  } else if (Number.isFinite(draft.restDeadline) && draft.restDeadline > now) {
+    startRestTimer(0, draft.restDeadline);
+  } else {
+    restRemaining = restSelectedSeconds;
+    renderRestTimer();
+  }
+  updateSessionClock();
   updateSetProgress();
   $("student-draft-status").textContent =
     "✓ Preenchimento recuperado deste aparelho: cargas, repetições e séries marcadas.";
