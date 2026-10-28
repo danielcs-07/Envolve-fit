@@ -26,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { bestRepProgress } from "./studio-metrics.mjs";
 import { cleanWorkoutFeedback, validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import { workoutSnapshot, usableSnapshot, resumeWorkout } from "./session-recovery.mjs";
 import {
@@ -1100,6 +1101,14 @@ function drawBars(container, entries, unit) {
   container.append(chart);
 }
 
+function renderStudentExerciseChart() {
+  const exercise = $("student-exercise-filter").value;
+  const metric = $("student-strength-metric").value;
+  drawBars($("student-strength-chart"),
+    metric === "reps" ? bestRepProgress(logs, exercise) : bestSetProgress(logs, exercise),
+    metric === "reps" ? "reps" : "kg");
+}
+
 function renderProgress() {
   const sorted = [...measurements].sort((a, b) =>
     (timestampDate(a.createdAt)?.getTime() || 0) -
@@ -1122,8 +1131,7 @@ function renderProgress() {
   if (names.includes(previous)) select.value = previous;
   else if (names.length) select.value = names[0];
 
-  const points = bestSetProgress(logs, select.value);
-  drawBars($("student-strength-chart"), points, "kg");
+  renderStudentExerciseChart();
 
   const latest = sorted.at(-1);
   $("stat-weight").textContent = latest ? `${latest.weight} kg` : "—";
@@ -1169,10 +1177,8 @@ function renderProgress() {
   });
 }
 
-$("student-exercise-filter").addEventListener("change", () => {
-  drawBars($("student-strength-chart"),
-    bestSetProgress(logs, $("student-exercise-filter").value), "kg");
-});
+$("student-exercise-filter").addEventListener("change", renderStudentExerciseChart);
+$("student-strength-metric").addEventListener("change", renderStudentExerciseChart);
 
 async function refreshData() {
   // A recuperação não depende de histórico/medidas responderem ao mesmo tempo.
