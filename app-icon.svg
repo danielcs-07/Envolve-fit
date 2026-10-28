@@ -1,6 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Evolve Fit">
-<rect width="512" height="512" rx="110" fill="#112743"/>
-<path d="M83 294l55-55 52 52 132-132 66 66" stroke="#70b5ff" stroke-width="36" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="88" y="341" width="336" height="24" rx="12" fill="#70b5ff" opacity=".7"/>
-<text x="256" y="432" fill="#ffffff" text-anchor="middle" font-size="65" font-family="Arial,sans-serif" font-weight="800" letter-spacing="-4">EVOLVE</text>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#121D3C"/><stop offset="1" stop-color="#5268F1"/></linearGradient>
+<linearGradient id="mark" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#CDE8FF"/><stop offset="1" stop-color="#66E6D8"/></linearGradient></defs>
+<rect width="512" height="512" rx="116" fill="url(#bg)"/>
+<circle cx="408" cy="110" r="166" fill="#8BA4FF" opacity=".10"/>
+<path d="M112 286l88-88 63 63 134-134" fill="none" stroke="url(#mark)" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M325 127h72v72" fill="none" stroke="url(#mark)" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M114 355h283" stroke="#E3EDFF" stroke-opacity=".42" stroke-width="18" stroke-linecap="round"/>
+<text x="256" y="433" text-anchor="middle" font-family="Arial,sans-serif" font-size="66" font-weight="800" letter-spacing="-3" fill="#FFFFFF">EVOLVE</text>
 </svg>
