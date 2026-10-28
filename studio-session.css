@@ -1,0 +1,154 @@
+/* Evolve Fit: sessão sempre acessível e preenchimento mais ágil */
+.studio-session-banner[hidden] { display: none !important; }
+.studio-session-banner {
+  position: fixed;
+  z-index: 110;
+  right: 24px;
+  bottom: 24px;
+  width: min(420px, calc(100vw - 36px));
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 17px 18px;
+  background: rgba(255,255,255,.97);
+  border: 1px solid #d7dff6;
+  border-radius: 21px;
+  box-shadow: 0 16px 53px rgba(25,34,77,.19), 0 4px 10px rgba(25,34,77,.06);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  color: #1e2a49;
+}
+.studio-session-pulse {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6965e6;
+  box-shadow: 0 0 0 5px rgba(105,101,230,.13);
+}
+.studio-session-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.studio-session-details small {
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  color: #646bbb;
+}
+.studio-session-details strong {
+  color: #1c2c4e;
+  font: 800 15px 'Outfit', sans-serif;
+  letter-spacing: -.035em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.studio-session-details > span {
+  color: #727f9e;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.studio-session-details progress {
+  width: 100%;
+  height: 5px;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 4px 0 0;
+  background: #e7eafa;
+  color: #6b6de7;
+  accent-color: #6b6de7;
+}
+.studio-session-details progress::-webkit-progress-bar { background: #e7eafa; }
+.studio-session-details progress::-webkit-progress-value { background: #6b6de7; border-radius: 10px; }
+.studio-session-details progress::-moz-progress-bar { background: #6b6de7; border-radius: 10px; }
+.studio-resume-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+  padding: 11px 13px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: #5664e5;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 6px 15px rgba(65,80,200,.18);
+}
+.studio-resume-button:hover { background: #414dc5; }
+.studio-resume-button span { font-size: 17px; }
+.dashboard-page .studio-repeat-set {
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  justify-self: start;
+  grid-column: 2 / -1;
+  min-height: 31px;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.4;
+  padding: 5px 10px;
+  border: 1px solid #d6dcf4;
+  border-radius: 9px;
+  background: #f6f7ff;
+  color: #5866bc;
+}
+.dashboard-page .studio-repeat-set:hover {
+  background: #e9edff;
+  border-color: #b1bef6;
+}
+.dashboard-page .series-row:has(.studio-repeat-set) { row-gap: 6px; }
+:root[data-studio-theme="dark"] .studio-session-banner {
+  color: #e4ebff;
+  background: rgba(30,40,66,.98);
+  border-color: #394663;
+  box-shadow: 0 18px 45px rgba(0,0,0,.39);
+}
+:root[data-studio-theme="dark"] .studio-session-details strong { color: #e6edff; }
+:root[data-studio-theme="dark"] .studio-session-details > span { color: #b3bedb; }
+:root[data-studio-theme="dark"] .studio-session-details small { color: #bbc0ff; }
+:root[data-studio-theme="dark"] .studio-session-details progress,
+:root[data-studio-theme="dark"] .studio-session-details progress::-webkit-progress-bar { background: #38435f; }
+:root[data-studio-theme="dark"] .dashboard-page .studio-repeat-set {
+  background: #2a3555;
+  border-color: #46537c;
+  color: #d7dcff;
+}
+@media (max-width:900px) {
+  .studio-session-banner {
+    left: max(11px, env(safe-area-inset-left, 0px));
+    right: max(11px, env(safe-area-inset-right, 0px));
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: 550px;
+    margin: 0 auto;
+    z-index: 190;
+    border-radius: 19px;
+    padding: 13px 15px;
+  }
+  .dashboard-page:has(#studio-session-banner:not([hidden])) .main-content {
+    padding-bottom: calc(230px + env(safe-area-inset-bottom, 0px));
+  }
+  .dashboard-page .studio-repeat-set { grid-column: 1 / -1; }
+}
+@media (max-width:420px) {
+  .studio-session-banner {
+    bottom: calc(89px + env(safe-area-inset-bottom, 0px));
+    padding: 13px 12px;
+    gap: 10px;
+  }
+  .studio-session-details strong { font-size: 14px; }
+  .studio-resume-button { font-size: 11px; padding: 10px 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-session-banner, .studio-resume-button { transition:none!important; animation:none!important; }
+}
