@@ -329,9 +329,17 @@
               <div><h3>Convide seus alunos</h3>
                 <p class="muted">Envie seu link de cadastro. Novas contas ficarão pendentes da sua aprovação.</p></div>
             </div>
-            <div class="trainer-invite-controls">
-              <input id="trainer-invite-url" type="text" readonly aria-label="Link para cadastro com este treinador">
-              <button id="trainer-copy-invite" class="primary-btn" type="button">Copiar convite</button>
+            <div class="trainer-code-box">
+              <label for="trainer-coach-code">Seu código exclusivo</label>
+              <div class="trainer-invite-controls">
+                <input id="trainer-coach-code" type="text" readonly placeholder="Carregando código..." aria-label="Código exclusivo do treinador">
+                <button id="trainer-copy-code" class="outline-btn" type="button">Copiar código</button>
+              </div>
+              <label for="trainer-invite-url">Ou compartilhe o link de cadastro</label>
+              <div class="trainer-invite-controls">
+                <input id="trainer-invite-url" type="text" readonly aria-label="Link de cadastro com código do treinador">
+                <button id="trainer-copy-invite" class="primary-btn" type="button">Copiar link</button>
+              </div>
             </div>
             <p id="trainer-invite-status" class="muted" role="status"></p>
           </article>
