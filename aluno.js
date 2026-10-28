@@ -14,7 +14,9 @@ import {
   addDoc,
   query,
   where,
-  serverTimestamp
+  serverTimestamp,
+  setDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
@@ -24,6 +26,7 @@ import {
 } from "./fitness-utils.mjs?v=20261021-pr-consistency";
 
 import { renderPRList } from "./pr-ui.mjs";
+import { workoutSnapshot, usableSnapshot, resumeWorkout } from "./session-recovery.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
 } from "./draft-storage.mjs";
@@ -40,6 +43,81 @@ let restInterval = null;
 let restRemaining = 0;
 let restDeadline = 0;
 let sessionRecovered = false;
+let cloudDraftTimer = null;
+let cloudDraftGeneration = 0;
+let cloudDraftQueue = Promise.resolve();
+let cloudDraftAllowed = true;
+
+function draftCloudRef() {
+  return doc(db, "sessionDrafts", currentUser.uid);
+}
+
+function scheduleCloudDraft(data, immediate = false) {
+  if (!currentUser || !cloudDraftAllowed) return;
+  const uid = currentUser.uid;
+  const generation = ++cloudDraftGeneration;
+  clearTimeout(cloudDraftTimer);
+  cloudDraftTimer = setTimeout(() => {
+    cloudDraftQueue = cloudDraftQueue.catch(() => {}).then(async () => {
+      if (generation !== cloudDraftGeneration || !cloudDraftAllowed || currentUser?.uid !== uid) return;
+      try {
+        await setDoc(doc(db, "sessionDrafts", uid), {
+          ownerId: uid,
+          role: "student",
+          data,
+          updatedAt: serverTimestamp()
+        });
+        if (generation === cloudDraftGeneration && selectedWorkout) {
+          $("student-draft-status").textContent =
+            "✓ Progresso salvo neste aparelho e no Firebase.";
+        }
+      } catch (error) {
+        if (error.code === "permission-denied") cloudDraftAllowed = false;
+        console.warn("Backup na nuvem indisponível; rascunho local preservado.", error.code || error);
+      }
+    });
+  }, immediate ? 0 : 700);
+}
+
+async function removeCloudDraft() {
+  ++cloudDraftGeneration;
+  clearTimeout(cloudDraftTimer);
+  const uid = currentUser?.uid;
+  if (!uid || !cloudDraftAllowed) return;
+  try {
+    await cloudDraftQueue.catch(() => {});
+    await deleteDoc(doc(db, "sessionDrafts", uid));
+  } catch (error) {
+    if (error.code === "permission-denied") cloudDraftAllowed = false;
+    console.warn("Não foi possível limpar backup remoto:", error.code || error);
+  }
+}
+
+async function restoreCloudDraft() {
+  if (!currentUser || !cloudDraftAllowed || selectedWorkout) return false;
+  try {
+    const snap = await getDoc(draftCloudRef());
+    if (!snap.exists() || !currentUser || selectedWorkout) return false;
+    const record = snap.data();
+    const data = record.data;
+    if (record.ownerId !== currentUser.uid || record.role !== "student" ||
+        !data || typeof data.workoutId !== "string") return false;
+    const match = workouts.find(w => w.id === data.workoutId);
+    const workout = match || (usableSnapshot(data.workout, data.workoutId) ? data.workout : null);
+    if (!workout || !Array.isArray(data.exercises)) return false;
+    writeDraft(localStore(), workoutKey(workout.id), data);
+    writeDraft(localStore(), studentKey("active-workout"), {
+      workoutId: workout.id, workoutSnapshot: workoutSnapshot(workout)
+    });
+    startWorkout(workout, { scroll: false });
+    $("student-draft-status").textContent = "✓ Seu treino foi recuperado do Firebase.";
+    return true;
+  } catch (error) {
+    if (error.code === "permission-denied") cloudDraftAllowed = false;
+    console.warn("Recuperação na nuvem indisponível; verificando cópia do aparelho.", error.code || error);
+    return false;
+  }
+}
 
 
 const localStore = () => {
@@ -54,7 +132,7 @@ function rememberStudentTab(tab) {
   writeDraft(localStore(), studentKey("tab"), { tab });
 }
 
-function saveActiveWorkoutDraft() {
+function saveActiveWorkoutDraft(immediate = false) {
   if (!currentUser || !selectedWorkout) return false;
   const exercises = [...$("training-exercises").querySelectorAll(".series-grid")]
     .map(group => {
@@ -69,11 +147,14 @@ function saveActiveWorkoutDraft() {
       };
     });
 
-  const saved = writeDraft(localStore(), workoutKey(selectedWorkout.id), {
+  const draft = {
     workoutId: selectedWorkout.id,
+    workout: workoutSnapshot(selectedWorkout),
     exercises,
     restDeadline
-  });
+  };
+  const saved = writeDraft(localStore(), workoutKey(selectedWorkout.id), draft);
+  scheduleCloudDraft(draft, immediate);
   $("student-draft-status").textContent = saved
     ? "✓ Progresso salvo automaticamente neste aparelho. Conclua o treino para enviar ao treinador."
     : "⚠️ O navegador não permitiu salvar o rascunho. Não feche esta página sem concluir.";
@@ -131,7 +212,7 @@ function saveMeasurementDraft() {
 }
 
 function restoreStudentSession() {
-  if (!currentUser || sessionRecovered) return;
+  if (!currentUser || sessionRecovered) return Boolean(selectedWorkout);
   sessionRecovered = true;
   const measurement = readDraft(localStore(), studentKey("measurements"));
   if (measurement) {
@@ -140,16 +221,16 @@ function restoreStudentSession() {
   }
 
   const pending = readDraft(localStore(), studentKey("active-workout"));
-  const active = pending?.workoutId &&
-    workouts.find(workout => workout.id === pending.workoutId);
+  const active = resumeWorkout(pending, workouts);
   if (active) {
-    // Retoma exatamente a ficha em andamento e mostra o preenchimento recuperado.
-    startWorkout(active);
-    return;
+    // Recupera a ficha do cache mesmo quando a conexão ao Firebase falha.
+    startWorkout(active, { scroll: false });
+    return true;
   }
-  if (pending) removeDraft(localStore(), studentKey("active-workout"));
+  // Nunca apagar a referência automaticamente ao receber lista vazia/incompleta.
   const tab = readDraft(localStore(), studentKey("tab"))?.tab;
   if (tab && Object.hasOwn(tabTitles, tab)) showTab(tab);
+  return false;
 }
 
 $("training-exercises").addEventListener("input", saveActiveWorkoutDraft);
@@ -159,7 +240,7 @@ $("measurement-form").addEventListener("change", saveMeasurementDraft);
 
 function saveStudentFormsOnBackground() {
   if (!currentUser) return;
-  if (selectedWorkout) saveActiveWorkoutDraft();
+  if (selectedWorkout) saveActiveWorkoutDraft(true);
   saveMeasurementDraft();
 }
 document.addEventListener("visibilitychange", () => {
@@ -361,7 +442,10 @@ function startWorkout(workout, { scroll = true, ignoreDraft = false } = {}) {
   if (selectedWorkout) saveActiveWorkoutDraft();
   selectedWorkout = workout;
   stopRestTimer();
-  writeDraft(localStore(), studentKey("active-workout"), { workoutId: workout.id });
+  writeDraft(localStore(), studentKey("active-workout"), {
+    workoutId: workout.id,
+    workoutSnapshot: workoutSnapshot(workout)
+  });
 
   $("active-workout").hidden = false;
   $("active-workout-name").textContent = workout.name;
@@ -493,6 +577,7 @@ $("close-workout").onclick = () => {
   selectedWorkout = null;
   stopRestTimer();
   removeDraft(localStore(), studentKey("active-workout"));
+  void removeCloudDraft();
   $("active-workout").hidden = true;
 };
 
@@ -501,6 +586,7 @@ $("discard-workout-draft").onclick = () => {
       !confirm("Descartar o preenchimento não enviado deste treino? Os registros já concluídos serão mantidos.")) return;
   const workout = selectedWorkout;
   removeDraft(localStore(), workoutKey(workout.id));
+  void removeCloudDraft();
   selectedWorkout = null;
   startWorkout(workout, { scroll: false, ignoreDraft: true });
   $("student-draft-status").textContent = "Rascunho descartado. Você pode começar um novo preenchimento.";
@@ -728,7 +814,8 @@ $("student-exercise-filter").addEventListener("change", () => {
 });
 
 async function refreshData() {
-  const [workoutSnap, logSnap, measurementSnap] = await Promise.all([
+  // A recuperação não depende de histórico/medidas responderem ao mesmo tempo.
+  const [workoutResult, logResult, measurementResult] = await Promise.allSettled([
     getDocs(query(
       collection(db, "workouts"),
       where("studentId", "==", currentUser.uid),
@@ -743,6 +830,12 @@ async function refreshData() {
       where("studentId", "==", currentUser.uid)
     ))
   ]);
+  if (workoutResult.status !== "fulfilled") throw workoutResult.reason;
+  const workoutSnap = workoutResult.value;
+  const logSnap = logResult.status === "fulfilled" ? logResult.value : { docs: [] };
+  const measurementSnap = measurementResult.status === "fulfilled" ? measurementResult.value : { docs: [] };
+  if (logResult.status !== "fulfilled") console.warn("Histórico indisponível:", logResult.reason);
+  if (measurementResult.status !== "fulfilled") console.warn("Medidas indisponíveis:", measurementResult.reason);
 
   workouts = workoutSnap.docs
     .map(snapshot => ({
@@ -832,6 +925,7 @@ $("training-form").onsubmit = async event => {
 
     removeDraft(localStore(), workoutKey(finishedWorkoutId));
     removeDraft(localStore(), studentKey("active-workout"));
+    await removeCloudDraft();
     selectedWorkout = null;
     stopRestTimer();
     $("active-workout").hidden = true;
@@ -936,13 +1030,13 @@ onAuthStateChanged(auth, async user => {
 
     try {
       await refreshData();
-      restoreStudentSession();
     } catch (error) {
-      console.error(error);
-      alert(
-        "Não foi possível carregar todos os dados. Verifique as regras do Firestore."
-      );
+      console.error("Dados temporariamente indisponíveis:", error);
+      $("training-message").textContent =
+        "Sem conexão com o servidor. Se havia um treino em andamento, recuperaremos a cópia do aparelho.";
     }
+    const restoredLocally = restoreStudentSession();
+    if (!restoredLocally) void restoreCloudDraft();
 
   } catch (error) {
     console.error(error);
@@ -972,7 +1066,10 @@ $("student-password-reset").addEventListener("click", async () => {
 });
 
 $("logout").onclick = async () => {
-  if (currentUser) clearUserDrafts(localStore(), "student", currentUser.uid);
+  if (currentUser) {
+    clearUserDrafts(localStore(), "student", currentUser.uid);
+    void removeCloudDraft();
+  }
   currentUser = null;
   await signOut(auth);
   location.replace("index.html");
