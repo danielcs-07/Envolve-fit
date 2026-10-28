@@ -145,6 +145,12 @@ function restoreStudentSession() {
   const pending = readDraft(localStore(), studentKey("active-workout"));
   const active = pending?.workoutId &&
     workouts.find(workout => workout.id === pending.workoutId);
+  // Não descartar o identificador do treino enquanto as fichas ainda
+  // podem estar carregando ou temporariamente indisponíveis.
+  if (pending && !active && workouts.length === 0) {
+    sessionRecovered = false;
+    return;
+  }
   if (active) {
     // Retoma exatamente a ficha em andamento e mostra o preenchimento recuperado.
     startWorkout(active);
