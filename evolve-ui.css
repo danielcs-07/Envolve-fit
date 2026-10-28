@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --background: #f3f5f0;
-  --blue: #21473c;
-  --blue-dark: #142925;
-  --blue-light: #eaf4df;
-  --text: #1c2825;
+  --background: #f0f1f5;
+  --blue: #222846;
+  --blue-dark: #151828;
+  --blue-light: #e0e3f3;
+  --text: #1c1e28;
   --muted: #718079;
-  --border: #e1e7df;
-  --shadow: 0 12px 35px rgba(20, 39, 31, .06);
-  --lime: #cdf568;
-  --lime-dark: #b5e64e;
-  --ink: #13211f;
-  --ink-soft: #1c312b;
-  --cream: #f8faf4;
+  --border: #dfe0e7;
+  --shadow: 0 12px 35px rgba(21,24,38, .06);
+  --lime: #6c82f1;
+  --lime-dark: #536ae1;
+  --ink: #131621;
+  --ink-soft: #1d2030;
+  --cream: #f4f5fa;
 }
 
 body {
@@ -32,13 +32,13 @@ button, a, input, select, textarea {
 
 button:focus-visible, a:focus-visible,
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 3px solid #9ed95e;
+  outline: 3px solid #6275d5;
   outline-offset: 3px;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #87b653;
-  box-shadow: 0 0 0 4px rgba(172, 225, 101, .16);
+  border-color: #5665b3;
+  box-shadow: 0 0 0 4px rgba(105,124,221, .16);
 }
 
 .login-page {
@@ -46,7 +46,7 @@ input:focus, select:focus, textarea:focus {
   place-items: center;
   min-height: 100svh;
   padding: clamp(14px, 2vw, 28px);
-  background: #e8ede5;
+  background: #e5e6ed;
 }
 
 .login-shell {
@@ -57,7 +57,7 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
   border-radius: 30px;
   background: var(--ink);
-  box-shadow: 0 26px 75px rgba(14, 36, 23, .17);
+  box-shadow: 0 26px 75px rgba(15,18,35, .17);
 }
 
 .login-visual {
@@ -68,11 +68,11 @@ input:focus, select:focus, textarea:focus {
   justify-content: space-between;
   padding: clamp(35px, 4vw, 58px);
   overflow: hidden;
-  color: #f7fdf0;
+  color: #f0f2fd;
   background:
-    radial-gradient(circle at 80% 62%, rgba(128, 175, 83, .13), transparent 44%),
-    radial-gradient(circle at 12% 90%, rgba(205, 245, 104, .1), transparent 48%),
-    #13231e;
+    radial-gradient(circle at 80% 62%, rgba(86,100,172, .13), transparent 44%),
+    radial-gradient(circle at 12% 90%, rgba(108,130,241, .1), transparent 48%),
+    #131623;
 }
 
 .login-visual::before {
@@ -84,8 +84,8 @@ input:focus, select:focus, textarea:focus {
   right: -280px;
   top: 12%;
   border-radius: 50%;
-  border: 110px solid rgba(205, 245, 104, .065);
-  box-shadow: 0 0 0 70px rgba(205, 245, 104, .025);
+  border: 110px solid rgba(108,130,241, .065);
+  box-shadow: 0 0 0 70px rgba(108,130,241, .025);
 }
 
 .login-visual::after {
@@ -96,7 +96,7 @@ input:focus, select:focus, textarea:focus {
   left: 12px;
   font: 900 clamp(120px, 18vw, 215px)/1 'Outfit', sans-serif;
   letter-spacing: -.09em;
-  color: rgba(205, 245, 104, .037);
+  color: rgba(108,130,241, .037);
   white-space: nowrap;
 }
 
@@ -119,7 +119,7 @@ input:focus, select:focus, textarea:focus {
   height: 47px;
   border-radius: 15px;
   background: var(--lime);
-  color: #182921;
+  color: #191b28;
   font: 900 17px/1 'Outfit', sans-serif;
   letter-spacing: -.07em;
   transform: rotate(-5deg);
@@ -137,10 +137,10 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 9px;
   padding: 8px 13px;
-  border: 1px solid rgba(205, 245, 104, .28);
+  border: 1px solid rgba(108,130,241, .28);
   border-radius: 30px;
   color: var(--lime);
-  background: rgba(205, 245, 104, .075);
+  background: rgba(108,130,241, .075);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .14em;
@@ -161,7 +161,7 @@ input:focus, select:focus, textarea:focus {
 
 .login-visual-content > p {
   max-width: 380px;
-  color: #b9c9bb;
+  color: #b7bacb;
   line-height: 1.75;
   font-size: 15px;
 }
@@ -182,7 +182,7 @@ input:focus, select:focus, textarea:focus {
 
 .visual-meter small {
   display: block;
-  color: #aabca9;
+  color: #a6aabf;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .09em;
@@ -191,7 +191,7 @@ input:focus, select:focus, textarea:focus {
 .visual-meter strong {
   display: block;
   margin-top: 5px;
-  color: #f6fff0;
+  color: #f1f3fe;
   font: 700 16px 'Outfit', sans-serif;
 }
 
@@ -202,7 +202,7 @@ input:focus, select:focus, textarea:focus {
   height: 46px;
   border-radius: 13px;
   background: var(--lime);
-  color: #183026;
+  color: #191c2f;
   font-size: 25px;
 }
 
@@ -210,7 +210,7 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 18px;
-  color: #b7c9ba;
+  color: #b6b9ca;
   font-size: 11px;
   font-weight: 700;
 }
@@ -231,7 +231,7 @@ input:focus, select:focus, textarea:focus {
   flex-direction: column;
   justify-content: center;
   padding: clamp(32px, 4.5vw, 68px);
-  background: #fbfcf8;
+  background: #f8f9fc;
 }
 
 .login-page .login-brand {
@@ -245,7 +245,7 @@ input:focus, select:focus, textarea:focus {
 
 .login-page .login-brand h1 {
   margin: 0;
-  color: #172923;
+  color: #181a28;
   font-size: 29px;
   font-weight: 900;
   letter-spacing: -.065em;
@@ -271,7 +271,7 @@ input:focus, select:focus, textarea:focus {
 
 .login-page .login-heading h2 {
   font-size: clamp(28px, 2.8vw, 36px);
-  color: #182822;
+  color: #181b28;
   font-weight: 800;
   letter-spacing: -.05em;
 }
@@ -288,7 +288,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .login-page .form-group label {
-  color: #2d4037;
+  color: #2e313f;
   font-size: 12px;
   font-weight: 800;
 }
@@ -297,17 +297,17 @@ input:focus, select:focus, textarea:focus {
   width: 100%;
   min-height: 54px;
   background: white;
-  border: 1px solid #dfe7dc;
+  border: 1px solid #dcdee7;
   border-radius: 13px;
   padding: 13px 16px;
-  color: #1c3328;
+  color: #1d2032;
   font-size: 14px;
 }
 
 .login-page .form-group input:focus {
   background: #fff;
-  border-color: #91bb61;
-  box-shadow: 0 0 0 4px rgba(173, 223, 110, .17);
+  border-color: #6472b8;
+  box-shadow: 0 0 0 4px rgba(113,131,220, .17);
   outline: none;
 }
 
@@ -325,12 +325,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 .login-card .primary-btn:hover {
-  background: #244236;
-  box-shadow: 0 10px 25px rgba(19, 39, 30, .13);
+  background: #252a41;
+  box-shadow: 0 10px 25px rgba(20,23,38, .13);
 }
 
 .login-page .login-switch {
-  border-top: 1px solid #e0e7dc;
+  border-top: 1px solid #dcdee7;
   color: #69776e;
   padding-top: 23px;
   margin-top: 19px;
@@ -338,7 +338,7 @@ input:focus, select:focus, textarea:focus {
 
 .login-page .login-switch button,
 .login-page .password-toggle {
-  color: #2f6f45;
+  color: #313b6d;
 }
 
 .login-page .login-switch button:hover {
@@ -353,8 +353,8 @@ input:focus, select:focus, textarea:focus {
 
 .login-page .auth-message:not(:empty) {
   padding: 12px 14px;
-  background: #edf6e2;
-  color: #3c6b41;
+  background: #e3e6f5;
+  color: #3d456a;
   border-radius: 11px;
 }
 
@@ -364,8 +364,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .login-page .auth-message.success:not(:empty) {
-  background: #e7f6df;
-  color: #2b7040;
+  background: #e0e3f5;
+  color: #2d386e;
 }
 
 .login-page .password-input-wrap {
@@ -400,16 +400,16 @@ input:focus, select:focus, textarea:focus {
 }
 
 .login-page .password-toggle:hover {
-  background: #edf7e2;
+  background: #e3e6f6;
 }
 
 .login-page .password-toggle:focus-visible {
-  outline: 2px solid #2f6f45;
+  outline: 2px solid #313b6d;
   outline-offset: 2px;
 }
 
 .dashboard-page {
-  background: #f2f4ef;
+  background: #eff0f4;
 }
 
 .dashboard-page .app-layout {
@@ -423,7 +423,7 @@ input:focus, select:focus, textarea:focus {
   padding: 28px 16px;
   position: sticky;
   top: 0;
-  background: #14231e;
+  background: #141723;
   border: 0;
   box-shadow: none;
   color: #fff;
@@ -440,13 +440,13 @@ input:focus, select:focus, textarea:focus {
   height: 47px;
   border-radius: 15px;
   background: var(--lime);
-  box-shadow: 0 8px 25px rgba(205, 245, 104, .16);
-  color: #18291f;
+  box-shadow: 0 8px 25px rgba(108,130,241, .16);
+  color: #191b28;
   font-size: 24px;
 }
 
 .dashboard-page .sidebar-brand h2 {
-  color: #f8fff1;
+  color: #f2f4fe;
   font-size: 24px;
   font-weight: 900;
   letter-spacing: -.06em;
@@ -455,7 +455,7 @@ input:focus, select:focus, textarea:focus {
 .dashboard-page .sidebar-brand small {
   display: block;
   margin-top: 3px;
-  color: #8fa99b;
+  color: #8c91ac;
   font-size: 11px;
 }
 
@@ -468,7 +468,7 @@ input:focus, select:focus, textarea:focus {
   text-align: left;
   border-radius: 13px;
   padding: 13px 15px;
-  color: #a9bdb0;
+  color: #a7abbf;
   background: transparent;
   font-size: 13px;
   font-weight: 700;
@@ -477,30 +477,30 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .nav-item:hover {
-  color: #f4fff0;
-  background: #233a30;
+  color: #f1f3fe;
+  background: #242739;
 }
 
 .dashboard-page .nav-item.active {
-  color: #13241d;
+  color: #141623;
   background: var(--lime);
-  box-shadow: 0 5px 20px rgba(205, 245, 104, .1);
+  box-shadow: 0 5px 20px rgba(108,130,241, .1);
 }
 
 .dashboard-page .sidebar-bottom {
-  border-top: 1px solid #294136;
+  border-top: 1px solid #2a2d40;
   padding: 20px 6px 0;
 }
 
 .dashboard-page .sidebar-bottom p {
-  color: #8fa899;
+  color: #8c91ab;
   font-size: 11px;
 }
 
 .dashboard-page .logout-btn {
   color: #f5b3b3;
   background: #293432;
-  border: 1px solid #344941;
+  border: 1px solid #353849;
   border-radius: 13px;
   font-size: 12px;
 }
@@ -510,7 +510,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .content-area {
-  background: #f4f6f1;
+  background: #f1f2f6;
   min-width: 0;
 }
 
@@ -518,18 +518,18 @@ input:focus, select:focus, textarea:focus {
   min-height: 92px;
   padding: 22px clamp(20px, 3.4vw, 50px);
   background: #fff;
-  border-bottom: 1px solid #e6ebe3;
+  border-bottom: 1px solid #e3e4eb;
 }
 
 .dashboard-page .eyebrow {
-  color: #83a268;
+  color: #6a73a0;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: .18em;
 }
 
 .dashboard-page .topbar h1 {
-  color: #15251d;
+  color: #151825;
   font-size: clamp(23px, 2vw, 30px);
   font-weight: 800;
   letter-spacing: -.055em;
@@ -538,15 +538,15 @@ input:focus, select:focus, textarea:focus {
 .dashboard-page .role-pill {
   border-radius: 100px;
   padding: 8px 14px;
-  background: #e9f6db;
-  color: #3c6842;
-  border: 1px solid #def0cd;
+  background: #dce0f5;
+  color: #3d4467;
+  border: 1px solid #ced4ef;
 }
 
 .dashboard-page .avatar {
   width: 43px;
   height: 43px;
-  background: #182a22;
+  background: #191b29;
   color: var(--lime);
   box-shadow: none;
 }
@@ -565,9 +565,9 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
   border-radius: 25px;
   border: 0;
-  background: #cdf568;
+  background: #6c82f1;
   box-shadow: none;
-  color: #1b2d21;
+  color: #1c1e2c;
 }
 
 .dashboard-page .hero::before {
@@ -578,7 +578,7 @@ input:focus, select:focus, textarea:focus {
   top: -170px;
   width: 520px;
   height: 520px;
-  border: 95px solid rgba(30, 56, 36, .08);
+  border: 95px solid rgba(31,35,55, .08);
   border-radius: 50%;
 }
 
@@ -590,13 +590,13 @@ input:focus, select:focus, textarea:focus {
   bottom: -65px;
   font: 900 clamp(190px, 20vw, 360px)/1 'Outfit', sans-serif;
   letter-spacing: -.1em;
-  color: rgba(27, 56, 34, .045);
+  color: rgba(28,32,55, .045);
   pointer-events: none;
 }
 
 .dashboard-page .hero-tag {
-  color: #255132;
-  border: 1px solid rgba(36, 75, 39, .18);
+  color: #262d50;
+  border: 1px solid rgba(37,43,74, .18);
   background: rgba(255, 255, 255, .35);
   padding: 7px 13px;
   letter-spacing: .12em;
@@ -605,7 +605,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .hero h2 {
-  color: #14291a;
+  color: #151828;
   font-weight: 900;
   font-size: clamp(28px, 3.4vw, 41px);
   letter-spacing: -.07em;
@@ -615,7 +615,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .hero p {
-  color: #3f613c;
+  color: #3d4360;
   font-size: 14px;
   line-height: 1.7;
   max-width: 490px;
@@ -630,9 +630,9 @@ input:focus, select:focus, textarea:focus {
   font-size: 88px;
   border-radius: 40px;
   color: #fff;
-  background: #1a3226;
+  background: #1b1e31;
   transform: rotate(-8deg);
-  box-shadow: 0 20px 35px rgba(21, 57, 30, .14);
+  box-shadow: 0 20px 35px rgba(22,28,56, .14);
 }
 
 .dashboard-page .hero-button {
@@ -640,15 +640,15 @@ input:focus, select:focus, textarea:focus {
   padding: 12px 20px;
   border: 0;
   border-radius: 12px;
-  background: #182b21;
+  background: #191c2a;
   color: var(--lime);
   font-size: 13px;
   font-weight: 800;
 }
 
 .dashboard-page .hero-button:hover {
-  background: #294435;
-  box-shadow: 0 10px 20px rgba(28, 56, 33, .14);
+  background: #2a2e43;
+  box-shadow: 0 10px 20px rgba(29,33,55, .14);
 }
 
 .dashboard-page .stats-grid {
@@ -659,25 +659,25 @@ input:focus, select:focus, textarea:focus {
 .dashboard-page .stat-card {
   min-height: 180px;
   padding: 24px;
-  border: 1px solid #e4e9e0;
+  border: 1px solid #e0e2e9;
   border-radius: 21px;
-  box-shadow: 0 6px 24px rgba(14, 33, 23, .035);
+  box-shadow: 0 6px 24px rgba(15,18,32, .035);
   background: #fff;
   transition: transform .2s, box-shadow .2s;
 }
 
 .dashboard-page .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 14px 28px rgba(14, 33, 23, .08);
+  box-shadow: 0 14px 28px rgba(15,18,32, .08);
 }
 
 .dashboard-page .stat-card:nth-child(1) {
-  background: #1c3228;
-  border-color: #1c3228;
+  background: #1d2031;
+  border-color: #1d2031;
 }
 
 .dashboard-page .stat-card:nth-child(1) .stat-icon {
-  background: #34493a;
+  background: #353849;
 }
 
 .dashboard-page .stat-card:nth-child(1) p,
@@ -686,12 +686,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .stat-card:nth-child(1) strong {
-  color: #d7ff84;
+  color: #8e9ff5;
 }
 
 .dashboard-page .stat-card:nth-child(2) {
-  background: #f0f9e4;
-  border-color: #e0eed2;
+  background: #e5e8f8;
+  border-color: #d3d7ed;
 }
 
 .dashboard-page .stat-icon {
@@ -699,12 +699,12 @@ input:focus, select:focus, textarea:focus {
   height: 46px;
   border-radius: 14px;
   font-size: 23px;
-  background: #edf4e4;
+  background: #e4e7f4;
   margin-bottom: 14px;
 }
 
 .dashboard-page .stat-card strong {
-  color: #1a2c22;
+  color: #1b1d2b;
   font-size: clamp(28px, 3vw, 35px);
   font-weight: 800;
 }
@@ -720,15 +720,15 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .panel-card {
-  border: 1px solid #e3e9df;
+  border: 1px solid #dfe1e9;
   border-radius: 23px;
   background: #fff;
-  box-shadow: 0 7px 28px rgba(24, 45, 27, .038);
+  box-shadow: 0 7px 28px rgba(25,28,44, .038);
   padding: clamp(21px, 2.5vw, 31px);
 }
 
 .dashboard-page .panel-card h3 {
-  color: #1b3025;
+  color: #1c1f2f;
   font-size: 19px;
 }
 
@@ -743,7 +743,7 @@ input:focus, select:focus, textarea:focus {
 
 .dashboard-page .section-heading h2 {
   font-size: clamp(25px, 2.8vw, 32px);
-  color: #1a2b21;
+  color: #1b1d2a;
   font-weight: 900;
   letter-spacing: -.06em;
 }
@@ -759,12 +759,12 @@ input:focus, select:focus, textarea:focus {
 
 .dashboard-page .card-heading h2,
 .dashboard-page .card-heading h3 {
-  color: #1e3227;
+  color: #1f2231;
 }
 
 .dashboard-page .primary-btn {
-  background: #1c3628;
-  color: #d2f979;
+  background: #1d2135;
+  color: #7e92f4;
   border-radius: 12px;
   min-height: 44px;
   font-weight: 800;
@@ -772,18 +772,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .primary-btn:hover {
-  background: #2a4c34;
-  box-shadow: 0 8px 18px rgba(22, 56, 30, .12);
+  background: #2b304b;
+  box-shadow: 0 8px 18px rgba(23,28,55, .12);
 }
 
 .dashboard-page .secondary-btn {
-  background: #e7f5d9;
-  color: #2c5b35;
+  background: #dadef4;
+  color: #2d355a;
   border-radius: 12px;
 }
 
 .dashboard-page .secondary-btn:hover {
-  background: #d7edc6;
+  background: #c7cdec;
 }
 
 .dashboard-page .outline-btn,
@@ -792,14 +792,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .outline-btn {
-  border-color: #dce6d9;
-  color: #2f4838;
+  border-color: #d9dbe6;
+  color: #303447;
 }
 
 .dashboard-page .workout-card {
   padding: 27px;
   position: relative;
-  border-left: 5px solid #b9e868;
+  border-left: 5px solid #6c80e4;
   overflow: hidden;
 }
 
@@ -812,8 +812,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .status-published {
-  background: #e4f7d1;
-  color: #32613a;
+  background: #d2d8f6;
+  color: #333b60;
 }
 
 .dashboard-page .status-draft {
@@ -822,18 +822,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .student-row {
-  border-color: #e9ede7;
+  border-color: #e7e8ed;
   gap: 12px;
 }
 
 .dashboard-page .student-row strong {
-  color: #20372a;
+  color: #212436;
 }
 
 .dashboard-page .exercise-editor,
 .dashboard-page .training-exercise {
-  background: #f7faf3;
-  border: 1px solid #e0ead8;
+  background: #f3f4fa;
+  border: 1px solid #d9dbe9;
   border-radius: 18px;
 }
 
@@ -846,34 +846,34 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dashboard-page .exercise-notes {
-  border-left: 4px solid #a3ce58;
-  background: #edf7df;
+  border-left: 4px solid #5c6eca;
+  background: #e0e3f6;
   border-radius: 9px;
-  color: #35533a;
+  color: #363b52;
 }
 
 .dashboard-page .series-row {
-  border-color: #e3eae0;
+  border-color: #e0e2ea;
   border-radius: 14px;
 }
 
 .dashboard-page .series-row:focus-within {
-  border-color: #9fcf72;
-  box-shadow: 0 0 0 3px rgba(159, 207, 114, .12);
+  border-color: #7583cc;
+  box-shadow: 0 0 0 3px rgba(117,131,204, .12);
 }
 
 .dashboard-page .bar {
-  background: linear-gradient(to top, #568d51, #c6ef70);
+  background: linear-gradient(to top, #535c8b, #7488eb);
   border-radius: 8px 8px 2px 2px;
 }
 
 .dashboard-page .bar-column small {
-  color: #50714f;
+  color: #505570;
   font-weight: 700;
 }
 
 .dashboard-page .profile-avatar {
-  background: #e9f4dd;
+  background: #dee1f3;
 }
 
 .dashboard-page .site-footer {
@@ -882,8 +882,8 @@ input:focus, select:focus, textarea:focus {
 
 .dashboard-page .empty-state,
 .dashboard-page .empty-text {
-  background: #f9fbf7;
-  border: 1px dashed #dce9d3;
+  background: #f7f8fb;
+  border: 1px dashed #d4d7e8;
   border-radius: 16px;
   color: #7b8d7c;
 }
@@ -920,7 +920,7 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 900px) {
   .login-page {
     padding: 0;
-    background: #fbfcf8;
+    background: #f8f9fc;
   }
 
   .login-shell {
