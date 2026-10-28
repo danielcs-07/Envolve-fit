@@ -513,3 +513,25 @@ button{cursor:pointer}
 .dashboard-page .studio-calculator-card .outline-btn{color:#fff;background:#5268ea;border-color:#5268ea}
 .dashboard-page .studio-calculator-card .outline-btn:hover{background:#465ac8}
 :root[data-studio-theme="dark"] .studio-playlist-player{background:#1b2840}
+
+
+/* Convite individual para cada treinador (sem expor outros alunos). */
+.trainer-invite-card { margin: 0 0 18px; }
+.trainer-invite-controls {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 13px;
+}
+.trainer-invite-controls input {
+  min-width: 0; width: 100%; font-size: 12px;
+  color: var(--studio-text); border: 1px solid var(--studio-edge);
+  background: var(--studio-soft); padding: 13px;
+  border-radius: 12px;
+}
+.trainer-invite-controls button { min-height: 44px; white-space: nowrap; }
+#trainer-invite-status { margin: 9px 0 0; font-size: 12px; }
+@media (max-width: 600px) {
+  .trainer-invite-controls { grid-template-columns: 1fr; }
+}
