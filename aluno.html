@@ -7,7 +7,7 @@
   <title>Meus Treinos | Evolve Fit</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="evolve-ui.css?v=3">
-  <link rel="stylesheet" href="pro-features.css?v=20261021-autosave">
+  <link rel="stylesheet" href="pro-features.css?v=20261028-timers-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -188,9 +188,28 @@
                 Seu preenchimento será salvo automaticamente neste aparelho.
               </p>
             </div>
-            <div class="rest-timer" id="rest-timer" aria-live="polite">
-              <span>⏱️ Descanso</span><strong id="rest-time">Pronto para começar</strong>
-              <button type="button" id="rest-stop" class="outline-btn">Parar</button>
+            <div class="workout-time-panel">
+              <div>
+                <span class="workout-time-label">⏱️ Duração do treino</span>
+                <strong id="session-elapsed" role="timer" aria-live="off">00:00:00</strong>
+              </div>
+              <p>O tempo continua mesmo se você bloquear a tela ou voltar depois.</p>
+            </div>
+            <div class="rest-timer" id="rest-timer">
+              <div class="rest-timer-heading">
+                <div>
+                  <span class="rest-timer-label">Descanso entre séries</span>
+                  <small id="rest-suggestion">Você escolhe quanto descansar</small>
+                </div>
+                <strong id="rest-time" role="timer" aria-live="off">01:30</strong>
+              </div>
+              <div class="rest-timer-actions">
+                <button type="button" id="rest-minus" class="outline-btn" aria-label="Diminuir descanso em 15 segundos">−15s</button>
+                <button type="button" id="rest-toggle" class="primary-btn">Iniciar</button>
+                <button type="button" id="rest-plus" class="outline-btn" aria-label="Aumentar descanso em 15 segundos">+15s</button>
+                <button type="button" id="rest-stop" class="outline-btn" disabled>Pular</button>
+              </div>
+              <p id="rest-hint" class="rest-timer-hint" role="status" aria-live="polite">Escolha um exercício para descansar.</p>
             </div>
             <form id="training-form">
               <div id="training-exercises"></div>
@@ -301,7 +320,7 @@
     </div>
   </div>
 
-  <script type="module" src="aluno.js?v=20261028-persistencia-beta-v2"></script>
+  <script type="module" src="aluno.js?v=20261028-timers-v1"></script>
   <script defer src="pwa.js"></script>
 </body>
 </html>
