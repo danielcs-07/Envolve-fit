@@ -334,10 +334,18 @@
             </article>
 
             <article class="panel-card">
-              <h3>🏋️ Progressão de cargas</h3>
-              <label class="filter-field">Exercício
-                <select id="student-exercise-filter"><option value="">Escolha um exercício</option></select>
-              </label>
+              <h3>🏋️ Evolução por exercício</h3>
+              <div class="studio-chart-filters">
+                <label class="filter-field">Exercício
+                  <select id="student-exercise-filter"><option value="">Escolha um exercício</option></select>
+                </label>
+                <label class="filter-field">Métrica
+                  <select id="student-strength-metric">
+                    <option value="weight">Carga (kg)</option>
+                    <option value="reps">Repetições</option>
+                  </select>
+                </label>
+              </div>
               <div id="student-strength-chart" class="chart-area"></div>
             </article>
           </div>
@@ -441,7 +449,7 @@
     </div>
   </div>
 
-  <script type="module" src="aluno.js?v=20261028-feedback-v1"></script>
+  <script type="module" src="aluno.js?v=20261028-polish-v2"></script>
   <script defer src="studio-shell.js?v=20261028-v1"></script>
   <script defer src="studio-explore.js?v=20261028-v1"></script>
   <script defer src="studio-tools.js?v=20261028-v1"></script>
