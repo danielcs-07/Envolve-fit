@@ -405,7 +405,7 @@
     width:100%;
   }
   .studio-more-logout:hover { background:#fff0f4; }
-  body.studio-sheet-open { overflow:hidden; touch-action: none; }
+  body.studio-sheet-open { overflow:hidden; }
   :root[data-studio-theme="dark"] .studio-mobile-dock {
     background:rgba(25,32,54,.96);
     border-color:#364260;
