@@ -140,7 +140,7 @@ async function registerTrainer(email, password) {
   if (name.length < 2 || name.length > 100) throw new Error("Digite seu nome completo.");
   // Impede criar contas órfãs enquanto o Firebase ainda usa as regras antigas.
   try {
-    await getDoc(doc(db, "trainerCodes", "__signup_rules_check__"));
+    await getDoc(doc(db, "trainerCodes", "signup-rules-check"));
   } catch (error) {
     if (error.code === "permission-denied") {
       throw new Error("Cadastro de treinadores ainda não ativado. É necessário publicar as novas regras do Firebase.");

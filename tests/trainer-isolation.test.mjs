@@ -51,6 +51,9 @@ test("cadastro requer convite e não permite trocar papel nem ativar por conta p
   assert.ok(auth.includes('role: "student"'));
   assert.ok(auth.includes('active: false'));
   assert.ok(auth.includes("Informe um código válido fornecido pelo treinador."));
+  assert.ok(auth.includes('doc(db, "trainerCodes", "signup-rules-check")'));
+  assert.ok(!auth.includes("__signup_rules_check__"));
+  assert.ok(auth.indexOf('doc(db, "trainerCodes", "signup-rules-check")') < auth.indexOf("createUserWithEmailAndPassword(auth, email, password)", auth.indexOf("async function registerTrainer")));
   const trainer=load("treinador.html");
   assert.ok(trainer.includes('id="trainer-copy-invite"'));
   assert.ok(trainer.includes('id="trainer-invite-url"'));
