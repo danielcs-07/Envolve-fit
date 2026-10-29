@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FIVE_DAY_PLAN } from "../treino-cinco-dias.mjs";
-import { WEEKLY_DRAFTS } from "../treino-semanal.mjs";
-import { FELIPE_MALE_PLAN, FELIPE_MALE_PLAN_ID, FELIPE_MALE_VIDEOS } from "../treino-masculino-felipe.mjs";
+import { FIVE_DAY_PLAN } from "../assets/js/treino-cinco-dias.mjs";
+import { WEEKLY_DRAFTS } from "../assets/js/treino-semanal.mjs";
+import { FELIPE_MALE_PLAN, FELIPE_MALE_PLAN_ID, FELIPE_MALE_VIDEOS } from "../assets/js/treino-masculino-felipe.mjs";
 
 test("Felipe tem seis dias e apenas a quinta difere do treino masculino original", () => {
   assert.equal(FELIPE_MALE_PLAN.length, 6);

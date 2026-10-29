@@ -1,8 +1,9 @@
+import { testFilePath } from "./test-paths.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync, existsSync} from "node:fs";
 
-const html = name => readFileSync(new URL("../"+name,import.meta.url),"utf8");
+const html = name => readFileSync(new URL("../" + testFilePath(name),import.meta.url),"utf8");
 
 test("páginas mantêm IDs exclusivos e recursos essenciais", () => {
   const pages=[
@@ -27,7 +28,7 @@ test("PWA has a valid manifest and static resources", () => {
   assert.equal(manifest.start_url,"./index.html");
   assert.equal(manifest.scope,"./");
   for(const filename of ["sw.js","app-icon.svg","offline.html","fitness-utils.mjs","pro-features.css"]) {
-    assert.ok(existsSync(new URL("../"+filename,import.meta.url)),filename+" missing");
+    assert.ok(existsSync(new URL("../" + testFilePath(filename),import.meta.url)),filename+" missing");
   }
 });
 

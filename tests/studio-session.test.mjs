@@ -1,7 +1,8 @@
+import { testFilePath } from "./test-paths.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
+const read = path => readFileSync(new URL("../" + testFilePath(path),import.meta.url),"utf8");
 
 test("cartão de continuação e recursos de série presentes na tela do aluno",()=>{
   const html=read("aluno.html");

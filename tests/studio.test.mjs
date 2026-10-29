@@ -1,7 +1,8 @@
+import { testFilePath } from "./test-paths.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-const read = name => readFileSync(new URL("../" + name, import.meta.url), "utf8");
+const read = name => readFileSync(new URL("../" + testFilePath(name), import.meta.url), "utf8");
 
 test("Studio tem navegação íntegra nos dois painéis", () => {
   for (const file of ["aluno.html", "treinador.html"]) {
@@ -39,5 +40,5 @@ test("novos scripts e CSS têm estrutura válida", () => {
   assert.equal((css.match(/{/g) || []).length, (css.match(/}/g) || []).length);
   assert.ok(css.includes('data-studio-theme="dark"'));
   assert.ok(css.includes('@media(max-width:900px)'));
-  assert.ok(read("sw.js").includes('"./studio.css"'));
+  assert.ok(read("sw.js").includes('"./assets/css/studio.css"'));
 });

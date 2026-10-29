@@ -1,7 +1,8 @@
+import { testFilePath } from "./test-paths.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-const load = file => readFileSync(new URL("../" + file, import.meta.url), "utf8");
+const load = file => readFileSync(new URL("../" + testFilePath(file), import.meta.url), "utf8");
 
 test("regras protegem clientes e históricos contra outros treinadores", () => {
   const rules = load("firestore.session-drafts.rules");

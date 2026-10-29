@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cleanWorkoutFeedback, validWorkoutFeedback, feedbackStars, feedbackEffort } from "../feedback-utils.mjs";
+import { cleanWorkoutFeedback, validWorkoutFeedback, feedbackStars, feedbackEffort } from "../assets/js/feedback-utils.mjs";
 
 test("feedback normalizado, validado e exibido com segurança", () => {
   const data = cleanWorkoutFeedback("4", "hard", " Gostei, mas cansativo! ");

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { workoutSnapshot, usableSnapshot, resumeWorkout } from "../session-recovery.mjs";
+import { workoutSnapshot, usableSnapshot, resumeWorkout } from "../assets/js/session-recovery.mjs";
 
 const workout = {
   id: "treino-123", name: "Costas", day: "terca",

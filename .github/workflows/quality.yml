@@ -16,7 +16,7 @@ jobs:
           node-version: '22'
       - name: Conferir sintaxe dos scripts
         run: |
-          for file in aluno.js treinador.js auth-ui.js aprovacao.js firebase-config.js fitness-utils.mjs pwa.js sw.js login-enhancements.js; do
+          for file in assets/js/aluno.js assets/js/treinador.js assets/js/auth-ui.js assets/js/aprovacao.js assets/js/firebase-config.js assets/js/fitness-utils.mjs assets/js/pwa.js sw.js assets/js/login-enhancements.js; do
             node --input-type=module --check < "$file"
           done
       - name: Testar regras de calendário e contratos das telas
