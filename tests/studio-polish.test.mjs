@@ -1,7 +1,8 @@
+import { testFilePath } from "./test-paths.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-const file = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+const file = path => readFileSync(new URL("../" + testFilePath(path), import.meta.url), "utf8");
 
 test("todas as páginas usam a identidade Studio sem estilos verdes antigos", () => {
   for (const page of ["index.html", "aluno.html", "treinador.html"]) {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { bestRepProgress } from "../studio-metrics.mjs";
+import { bestRepProgress } from "../assets/js/studio-metrics.mjs";
 test("progressão de repetições por exercício, sem misturar outros movimentos", () => {
  const logs=[
  { createdAt: { seconds: 200 },exercises:[{name:"Supino",series:[{reps:8},{reps:12}]}]},

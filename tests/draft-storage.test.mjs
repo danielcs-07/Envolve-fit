@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts, DRAFT_TTL_MS
-} from "../draft-storage.mjs";
+} from "../assets/js/draft-storage.mjs";
 
 function memoryStorage() {
   const values = new Map();

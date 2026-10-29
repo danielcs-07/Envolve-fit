@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateCoachCode, validCoachCode, normalizeCoachCode } from "../coach-codes.mjs";
+import { generateCoachCode, validCoachCode, normalizeCoachCode } from "../assets/js/coach-codes.mjs";
 test("código exclusivo possui formato consistente e 12 caracteres aleatórios", () => {
  const code = generateCoachCode(Uint8Array.from([0,1,2,3,4,5,6,7,8,9,10,11]));
  assert.equal(code.length,15);

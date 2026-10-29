@@ -4,7 +4,7 @@ import {
   normalizeDay, localDay, weekDates, numberOfSeries,
   trainingVolume, bestSetProgress, uniqueExercises, recentLogs,
   recordedSeriesCount, trainingConsistency, personalRecords
-} from "../fitness-utils.mjs";
+} from "../assets/js/fitness-utils.mjs";
 
 const date = (year, month, day) => new Date(year, month - 1, day);
 

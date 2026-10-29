@@ -1,6 +1,10 @@
+## Organização do repositório
+
+As páginas e links públicos foram mantidos na raiz; scripts e estilos foram agrupados em `assets/js/` e `assets/css/`, e os guias estão em `docs/`. Veja [a estrutura completa](docs/ORGANIZACAO.md). **Nenhuma lógica de treino ou regra do Firebase foi modificada nesta reorganização.**
+
 ## Ativação segura para vários treinadores
 
-**Não libere novos treinadores antes de seguir [SEGUNDO-TREINADOR.md](SEGUNDO-TREINADOR.md).** O cadastro de treinador passará a ser automático com código exclusivo, mas a proteção real dos dados só existirá após publicar as regras novas e vincular os alunos existentes, inclusive a Vitória, ao treinador original.
+**Não libere novos treinadores antes de seguir [guia de vários treinadores](docs/SEGUNDO-TREINADOR.md).** O cadastro de treinador passará a ser automático com código exclusivo, mas a proteção real dos dados só existirá após publicar as regras novas e vincular os alunos existentes, inclusive a Vitória, ao treinador original.
 
 # Evolve Fit 💪
 
@@ -68,7 +72,7 @@ Esta versão altera sobretudo HTML, CSS e JavaScript de apresentação. Modelos 
 - Exporta registros filtrados de treino em CSV.
 
 ## Como usar
-1. O profissional abre **Criar conta**, seleciona **Sou treinador** e cria o próprio cadastro. O aplicativo gera um `coachCode` exclusivo (ex.: `EF-ABCDEF234567`). **Essa funcionalidade só estará disponível após publicar e validar as novas regras**, conforme [SEGUNDO-TREINADOR.md](SEGUNDO-TREINADOR.md).
+1. O profissional abre **Criar conta**, seleciona **Sou treinador** e cria o próprio cadastro. O aplicativo gera um `coachCode` exclusivo (ex.: `EF-ABCDEF234567`). **Essa funcionalidade só estará disponível após publicar e validar as novas regras**, conforme [guia de vários treinadores](docs/SEGUNDO-TREINADOR.md).
 2. O aluno abre o link de convite ou informa o código do treinador ao selecionar **Sou aluno**.
 3. A conta é criada com `role: "student"`, `active: false`, `trainerCode` e `trainerId` do responsável pelo código. O vínculo é validado nas regras do Firestore.
 4. O treinador aprova o cadastro em **Meus alunos** e publica as fichas escolhendo o aluno destinatário.
@@ -124,7 +128,7 @@ Antes de atender alunos reais:
 - Faça um teste completo com contas de teste para cadastro, aprovação, publicação, registro e histórico.
 - Considere exigir verificação de e-mail para ambientes de produção, com atualização apropriada do fluxo de cadastro e aprovação.
 
-Não armazene chaves administrativas ou credenciais privadas no repositório. O `firebase-config.js` contém apenas a configuração pública do aplicativo web, que deve ser protegida pelas **regras** do Firestore e pela autorização do Firebase.
+Não armazene chaves administrativas ou credenciais privadas no repositório. O `assets/js/firebase-config.js` contém apenas a configuração pública do aplicativo web, que deve ser protegida pelas **regras** do Firestore e pela autorização do Firebase.
 
 ## Testes
 O workflow `Validar Evolve Fit` executa `node --check` nos scripts e `node --test tests/*.test.mjs` a cada pull request e envio à `main`.
