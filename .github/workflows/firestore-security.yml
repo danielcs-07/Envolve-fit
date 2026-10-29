@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - "firestore.session-drafts.rules"
-      - "tests/firestore-isolation.emulator.test.mjs"
+      - "tests/firestore-isolation.emulator.mjs"
       - "tests/firebase-emulator.json"
       - ".github/workflows/firestore-security.yml"
   workflow_dispatch:
@@ -24,4 +24,4 @@ jobs:
       - name: Instalar ferramentas de teste
         run: npm install --no-save --no-package-lock firebase@12.4.0 @firebase/rules-unit-testing@5 firebase-tools@14
       - name: Testar regras reais com Firestore Emulator
-        run: npx firebase emulators:exec --only firestore --project demo-evolve-fit --config tests/firebase-emulator.json "node --test tests/firestore-isolation.emulator.test.mjs"
+        run: npx firebase emulators:exec --only firestore --project demo-evolve-fit --config tests/firebase-emulator.json "node --test tests/firestore-isolation.emulator.mjs"
