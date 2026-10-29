@@ -38,7 +38,34 @@ service cloud.firestore {
     }
 
     function validTrainerCode(code) {
-      return code is string && code.matches('^EF-[A-HJ-NP-Z2-9]{12}
+      return code is string && code.matches('^EF-[A-HJ-NP-Z2-9]{12}$');
+    }
+
+    function validStudentCoach(data) {
+      return data.trainerId is string
+        && validTrainerCode(data.trainerCode)
+        && exists(/databases/$(database)/documents/trainerCodes/$(data.trainerCode))
+        && get(/databases/$(database)/documents/trainerCodes/$(data.trainerCode)).data.trainerId == data.trainerId
+        && activeTrainerProfile(data.trainerId);
+    }
+
+    // A reserva tem ID igual ao código e nunca pode ser sobrescrita.
+    // Criação do código e do perfil do treinador ocorre em um mesmo lote.
+    match /trainerCodes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && validTrainerCode(code)
+        && request.resource.data.keys().hasOnly(["trainerId", "createdAt"])
+        && request.resource.data.keys().hasAll(["trainerId", "createdAt"])
+        && request.resource.data.trainerId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "trainer"
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.coachCode == code;
+      allow update, delete: if false;
+    }
 
     match /users/{userId} {
       allow get: if signedIn()
