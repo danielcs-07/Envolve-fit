@@ -1,0 +1,28 @@
+name: Validar Evolve Fit 3.0 (protótipo)
+on:
+  push:
+    branches:
+      - experimento-evolve-v3-react-motion
+    paths:
+      - 'app-v3/**'
+      - '.github/workflows/v3-build.yml'
+  pull_request:
+    paths:
+      - 'app-v3/**'
+      - '.github/workflows/v3-build.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências da demo React
+        working-directory: app-v3
+        run: npm install --no-audit --no-fund
+      - name: Conferir build de produção do protótipo
+        working-directory: app-v3
+        run: npm run build
