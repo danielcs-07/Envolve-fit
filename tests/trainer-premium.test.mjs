@@ -7,7 +7,7 @@ const read = path => readFileSync(new URL("../" + testFilePath(path), import.met
 
 test("Painel profissional preserva identificadores e módulos originais", () => {
   const html = read("treinador.html");
-  const ids = [...html.matchAll(/\\bid="([^"]+)"/g)].map(match => match[1]);
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
   assert.equal(ids.length, new Set(ids).size, "IDs duplicados");
   for (const id of [
     "welcome-name", "quick-create", "stat-students", "stat-workouts", "stat-logs",
