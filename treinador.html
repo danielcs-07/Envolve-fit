@@ -4,17 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#112743">
+  <meta name="theme-color" content="#11271e">
   <title>Painel do Treinador | Evolve Fit</title>
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/evolve-ui.css?v=3">
   <link rel="stylesheet" href="assets/css/pro-features.css?v=20261028-feedback-v1">
   <link rel="stylesheet" href="assets/css/studio.css?v=20261028-multitrainer-v1">
   <link rel="stylesheet" href="assets/css/studio-navigation.css?v=20261028-dock-v1">
+  <link rel="stylesheet" href="assets/css/trainer-premium.css?v=20261110-v1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
-<body class="dashboard-page">
+<body class="dashboard-page premium-trainer">
 
   <div id="loading" class="loading">
     <div class="loading-icon">💪</div>
@@ -81,106 +82,113 @@
 
       <main class="main-content">
 
-        <section id="tab-dashboard" class="tab active">
-          <div class="hero">
+        <section id="tab-dashboard" class="tab active premium-dashboard">
+          <div class="premium-page-intro">
             <div>
-              <span class="hero-tag">EVOLVE FIT</span>
-              <h2>Olá, <span id="welcome-name">treinador</span>! 👋</h2>
-              <p>
-                Organize seus treinos, acompanhe seus alunos
-                e transforme cada evolução em resultado.
-              </p>
-              <button id="quick-create" class="hero-button">
-                ➕ Criar novo treino
-              </button>
+              <span class="premium-overline"><span class="premium-overline-dot" aria-hidden="true"></span> SEU ESPAÇO DE TRABALHO</span>
+              <h2>Visão geral do seu negócio.</h2>
+              <p>Tudo que importa para acompanhar seus alunos, em um só lugar.</p>
             </div>
-            <div class="hero-art">◎</div>
+            <span class="premium-intro-tag">PAINEL DO PERSONAL <span aria-hidden="true">↗</span></span>
           </div>
 
-          <div class="stats-grid">
-            <article class="stat-card">
-              <span class="stat-icon">👥</span>
-              <p>Alunos ativos</p>
-              <strong id="stat-students">0</strong>
-              <small>Contas autorizadas</small>
-            </article>
+          <div class="hero premium-hero">
+            <div class="premium-hero-copy">
+              <span class="hero-tag">SEU DIA NO EVOLVE FIT</span>
+              <h2>Olá, <span id="welcome-name">treinador</span><span class="premium-wave" aria-hidden="true">.</span></h2>
+              <p>Mais clareza para planejar seus treinos. Mais tempo para cuidar da evolução de cada aluno.</p>
+              <div class="premium-hero-actions">
+                <button type="button" id="quick-create" class="hero-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar novo treino</span></button>
+                <button type="button" data-nav-to="students" class="premium-secondary-action"><span>Ver meus alunos</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+              </div>
+            </div>
+            <div class="premium-hero-focus" aria-label="Resumo de sessões da semana">
+              <div class="premium-hero-focus-top"><span class="premium-focus-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 16l5-5 4 3 4-6"/></svg></span><span>ÚLTIMOS 7 DIAS</span></div>
+              <div class="premium-focus-number"><strong id="premium-week-count">0</strong><span>sessões<br>concluídas</span></div>
+              <div class="premium-focus-divider"></div>
+              <p><span class="premium-focus-dot" aria-hidden="true"></span><span id="premium-week-students">Aguardando dados da semana</span></p>
+            </div>
+          </div>
 
+          <div class="premium-block-header">
+            <div><span class="premium-section-label">SEU DESEMPENHO</span><h3>Resumo da operação</h3></div>
+            <span class="premium-soft-note">Dados da sua equipe</span>
+          </div>
+          <div class="stats-grid premium-stats">
             <article class="stat-card">
-              <span class="stat-icon">💪</span>
-              <p>Treinos criados</p>
-              <strong id="stat-workouts">0</strong>
-              <small>Fichas cadastradas</small>
+              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><p>Alunos ativos</p><strong id="stat-students">0</strong>
+              <small>Alunos com acesso liberado</small>
             </article>
-
             <article class="stat-card">
-              <span class="stat-icon">🚀</span>
-              <p>Treinos publicados</p>
-              <strong id="stat-published">0</strong>
-              <small>Disponíveis para alunos</small>
+              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><p>Fichas publicadas</p><strong id="stat-published">0</strong>
+              <small>Treinos disponíveis</small>
             </article>
-
             <article class="stat-card">
-              <span class="stat-icon">📋</span>
-              <p>Treinos realizados</p>
-              <strong id="stat-logs">0</strong>
-              <small>Registros recebidos</small>
+              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM3 9h18M8 2v4M16 2v4"/></svg></span><p>Sessões realizadas</p><strong id="stat-logs">0</strong>
+              <small>Total registrado</small>
+            </article>
+            <article class="stat-card">
+              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><p>Fichas criadas</p><strong id="stat-workouts">0</strong>
+              <small>Publicadas e rascunhos</small>
             </article>
           </div>
 
-          <section class="studio-quick-actions" aria-label="Ações rápidas">
-            <button type="button" data-nav-to="create" class="studio-action"><span>＋</span><strong>Nova ficha</strong><small>Criar treino</small></button>
-            <button type="button" data-nav-to="students" class="studio-action"><span>♧</span><strong>Alunos</strong><small>Gerenciar perfis</small></button>
-            <button type="button" data-nav-to="models" class="studio-action"><span>▧</span><strong>Modelos</strong><small>Agilizar a criação</small></button>
-            <button type="button" data-nav-to="history" class="studio-action"><span>↗</span><strong>Histórico</strong><small>Conferir sessões</small></button>
+          <div class="premium-block-header premium-actions-heading">
+            <div><span class="premium-section-label">PRODUTIVIDADE</span><h3>Acesso rápido</h3></div>
+            <span class="premium-soft-note">Seu trabalho, sem atalhos complicados</span>
+          </div>
+          <section class="studio-quick-actions premium-quick-actions" aria-label="Ações rápidas">
+            <button type="button" data-nav-to="create" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><strong>Nova ficha</strong><small>Montar treino</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
+            <button type="button" data-nav-to="students" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><strong>Meus alunos</strong><small>Gerenciar e acompanhar</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
+            <button type="button" data-nav-to="models" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><strong>Modelos de treino</strong><small>Começar com uma base</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
+            <button type="button" data-nav-to="history" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 16l5-5 4 3 4-6"/></svg></span><strong>Histórico</strong><small>Ver sessões realizadas</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
           </section>
-          <div id="trainer-weekly-stats" class="mini-stats-grid"></div>
-          <article class="panel-card studio-trainer-attention">
-            <div class="card-heading">
-              <div><h3>Acompanhamento dos alunos</h3>
-                <p class="muted">Quem já tem ficha publicada e quem ainda não registrou treinos recentemente.</p></div>
-              <button type="button" class="outline-btn" data-nav-to="students">Ver alunos</button>
-            </div>
-            <div id="trainer-attention-list" class="studio-attention-list">
-              <p class="muted">Carregando alunos...</p>
-            </div>
-          </article>
 
-          <div class="panel-grid">
-            <article class="panel-card">
+          <div class="premium-block-header premium-monitor-heading">
+            <div><span class="premium-section-label">ACOMPANHAMENTO</span><h3>Visão dos alunos</h3></div>
+          </div>
+          <div class="premium-monitor-grid">
+            <article class="panel-card studio-trainer-attention premium-attention-card">
               <div class="card-heading">
-                <div>
-                  <h3>📈 Evolução dos alunos</h3>
-                  <p>Desempenho registrado nos treinos</p>
-                </div>
+                <div><h3>Alunos que merecem atenção</h3><p class="muted">Prioridade para quem ainda não tem ficha ou está sem registros recentes.</p></div>
+                <button type="button" class="outline-btn premium-text-action" data-nav-to="students">Todos os alunos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
               </div>
-              <div id="overview-progress" class="empty-state">
-                <span>📊</span>
-                <p>Os resultados aparecerão após os primeiros treinos.</p>
-              </div>
+              <div id="trainer-attention-list" class="studio-attention-list"><p class="muted">Carregando alunos...</p></div>
             </article>
 
-            <article class="panel-card">
+            <article class="panel-card premium-activity-card">
               <div class="card-heading">
-                <div>
-                  <h3>🕒 Atividades recentes</h3>
-                  <p>Últimos registros enviados</p>
-                </div>
+                <div><h3>Atividade recente</h3><p class="muted">Últimas sessões concluídas pelos alunos.</p></div>
+                <span class="premium-card-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM3 9h18M8 2v4M16 2v4"/></svg></span>
               </div>
-              <div id="recent-activity" class="empty-state">
-                <span>📅</span>
-                <p>Nenhuma atividade registrada.</p>
-              </div>
+              <div id="recent-activity" class="premium-activity-list"><p class="muted">Carregando atividades...</p></div>
+              <button type="button" class="premium-card-footer" data-nav-to="history">Abrir histórico completo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
             </article>
           </div>
-          <article class="panel-card trainer-feedback-overview">
-            <div class="card-heading">
-              <div>
-                <h3>💬 Feedback dos alunos</h3>
-                <p class="muted">Notas, dificuldade percebida e comentários dos últimos treinos.</p>
+
+          <div class="premium-analysis-grid">
+            <article class="panel-card premium-chart-card">
+              <div class="card-heading">
+                <div><span class="premium-section-label">EVOLUÇÃO</span><h3>Sessões nos últimos 7 dias</h3><p class="muted">Treinos concluídos por dia, com base nos registros dos alunos.</p></div>
+                <span class="premium-chart-legend"><i aria-hidden="true"></i> Sessões</span>
               </div>
+              <div id="overview-progress" class="premium-week-chart" aria-label="Gráfico de sessões concluídas nos últimos sete dias"></div>
+            </article>
+
+            <div class="premium-side-panels">
+              <article class="panel-card premium-highlights-card">
+                <div class="card-heading"><div><h3>Indicadores da equipe</h3><p class="muted">Movimento recente e feedbacks.</p></div></div>
+                <div id="trainer-weekly-stats" class="mini-stats-grid premium-mini-stats"></div>
+              </article>
+              <article class="panel-card trainer-feedback-overview premium-feedback-card">
+                <div class="card-heading">
+                  <div><h3>Feedback dos alunos</h3><p class="muted">Como os alunos avaliaram seus treinos.</p></div>
+                  <span class="premium-card-symbol">✳</span>
+                </div>
+                <div id="trainer-latest-feedback" class="trainer-feedback-list"></div>
+              </article>
             </div>
-            <div id="trainer-latest-feedback" class="trainer-feedback-list"></div>
-          </article>
+          </div>
         </section>
 
         <section id="tab-create" class="tab">
