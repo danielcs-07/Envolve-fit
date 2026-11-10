@@ -1010,7 +1010,6 @@ function renderDashboard() {
     });
   }
   renderTrainerRoster();
-  const weekLogs = recentLogs(logs);
   [
     ["📅", "Treinos nos últimos 7 dias", String(weekLogs.length)],
     ["💪", "Alunos que treinaram", String(new Set(weekLogs.map(log => log.studentId)).size)],
