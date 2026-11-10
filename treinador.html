@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="assets/css/pro-features.css?v=20261028-feedback-v1">
   <link rel="stylesheet" href="assets/css/studio.css?v=20261028-multitrainer-v1">
   <link rel="stylesheet" href="assets/css/studio-navigation.css?v=20261028-dock-v1">
-  <link rel="stylesheet" href="assets/css/trainer-premium.css?v=20261110-v1">
+  <link rel="stylesheet" href="assets/css/trainer-premium.css?v=20261110-v2">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="app-icon.svg" type="image/svg+xml">
 </head>
@@ -83,111 +83,99 @@
       <main class="main-content">
 
         <section id="tab-dashboard" class="tab active premium-dashboard">
-          <div class="premium-page-intro">
-            <div>
-              <span class="premium-overline"><span class="premium-overline-dot" aria-hidden="true"></span> SEU ESPAÇO DE TRABALHO</span>
-              <h2>Visão geral do seu negócio.</h2>
-              <p>Tudo que importa para acompanhar seus alunos, em um só lugar.</p>
+          <div class="premium-workspace-heading">
+            <div class="premium-workspace-copy">
+              <span class="premium-kicker">WORKSPACE <span aria-hidden="true">/</span> VISÃO GERAL</span>
+              <h2>Bom dia, <span id="welcome-name">treinador</span><span class="premium-accent-dot">.</span></h2>
+              <p>O que está acontecendo com seus alunos hoje.</p>
             </div>
-            <span class="premium-intro-tag">PAINEL DO PERSONAL <span aria-hidden="true">↗</span></span>
-          </div>
-
-          <div class="hero premium-hero">
-            <div class="premium-hero-copy">
-              <span class="hero-tag">SEU DIA NO EVOLVE FIT</span>
-              <h2>Olá, <span id="welcome-name">treinador</span><span class="premium-wave" aria-hidden="true">.</span></h2>
-              <p>Mais clareza para planejar seus treinos. Mais tempo para cuidar da evolução de cada aluno.</p>
-              <div class="premium-hero-actions">
-                <button type="button" id="quick-create" class="hero-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar novo treino</span></button>
-                <button type="button" data-nav-to="students" class="premium-secondary-action"><span>Ver meus alunos</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-              </div>
-            </div>
-            <div class="premium-hero-focus" aria-label="Resumo de sessões da semana">
-              <div class="premium-hero-focus-top"><span class="premium-focus-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 16l5-5 4 3 4-6"/></svg></span><span>ÚLTIMOS 7 DIAS</span></div>
-              <div class="premium-focus-number"><strong id="premium-week-count">0</strong><span>sessões<br>concluídas</span></div>
-              <div class="premium-focus-divider"></div>
-              <p><span class="premium-focus-dot" aria-hidden="true"></span><span id="premium-week-students">Aguardando dados da semana</span></p>
+            <div class="premium-heading-actions">
+              <button type="button" class="premium-btn premium-btn-quiet" data-nav-to="students"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Gerenciar alunos</span></button>
+              <button type="button" class="premium-btn premium-btn-primary" id="quick-create"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar treino</span></button>
             </div>
           </div>
 
-          <div class="premium-block-header">
-            <div><span class="premium-section-label">SEU DESEMPENHO</span><h3>Resumo da operação</h3></div>
-            <span class="premium-soft-note">Dados da sua equipe</span>
-          </div>
-          <div class="stats-grid premium-stats">
-            <article class="stat-card">
-              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><p>Alunos ativos</p><strong id="stat-students">0</strong>
-              <small>Alunos com acesso liberado</small>
+          <div class="premium-metrics" aria-label="Indicadores do treinador">
+            <article class="premium-metric">
+              <div class="premium-metric-head"><span>Alunos ativos</span><span class="premium-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div>
+              <strong id="stat-students">—</strong><small>Com acesso ao aplicativo</small>
             </article>
-            <article class="stat-card">
-              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><p>Fichas publicadas</p><strong id="stat-published">0</strong>
-              <small>Treinos disponíveis</small>
+            <article class="premium-metric">
+              <div class="premium-metric-head"><span>Alunos em atividade</span><span class="premium-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span></div>
+              <strong id="premium-week-student-count">—</strong><small>Treinaram nos últimos 7 dias</small>
             </article>
-            <article class="stat-card">
-              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM3 9h18M8 2v4M16 2v4"/></svg></span><p>Sessões realizadas</p><strong id="stat-logs">0</strong>
-              <small>Total registrado</small>
+            <article class="premium-metric">
+              <div class="premium-metric-head"><span>Treinos publicados</span><span class="premium-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></span></div>
+              <strong id="stat-published">—</strong><small>Fichas disponíveis para alunos</small>
             </article>
-            <article class="stat-card">
-              <span class="premium-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><p>Fichas criadas</p><strong id="stat-workouts">0</strong>
-              <small>Publicadas e rascunhos</small>
+            <article class="premium-metric">
+              <div class="premium-metric-head"><span>Sessões em 7 dias</span><span class="premium-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
+              <strong id="premium-week-count">—</strong><small id="premium-week-students">Aguardando dados recentes</small>
             </article>
           </div>
 
-          <div class="premium-block-header premium-actions-heading">
-            <div><span class="premium-section-label">PRODUTIVIDADE</span><h3>Acesso rápido</h3></div>
-            <span class="premium-soft-note">Seu trabalho, sem atalhos complicados</span>
-          </div>
-          <section class="studio-quick-actions premium-quick-actions" aria-label="Ações rápidas">
-            <button type="button" data-nav-to="create" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><strong>Nova ficha</strong><small>Montar treino</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
-            <button type="button" data-nav-to="students" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><strong>Meus alunos</strong><small>Gerenciar e acompanhar</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
-            <button type="button" data-nav-to="models" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><strong>Modelos de treino</strong><small>Começar com uma base</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
-            <button type="button" data-nav-to="history" class="studio-action"><span class="premium-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 16l5-5 4 3 4-6"/></svg></span><strong>Histórico</strong><small>Ver sessões realizadas</small><span class="premium-action-arrow" aria-hidden="true">↗</span></button>
-          </section>
-
-          <div class="premium-block-header premium-monitor-heading">
-            <div><span class="premium-section-label">ACOMPANHAMENTO</span><h3>Visão dos alunos</h3></div>
-          </div>
-          <div class="premium-monitor-grid">
-            <article class="panel-card studio-trainer-attention premium-attention-card">
-              <div class="card-heading">
-                <div><h3>Alunos que merecem atenção</h3><p class="muted">Prioridade para quem ainda não tem ficha ou está sem registros recentes.</p></div>
-                <button type="button" class="outline-btn premium-text-action" data-nav-to="students">Todos os alunos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="premium-workspace-grid">
+            <article class="premium-section premium-roster">
+              <div class="premium-section-heading">
+                <div><h3>Seus alunos</h3><p>Fichas, frequência e últimos registros em uma visão.</p></div>
+                <button type="button" class="premium-link" data-nav-to="students">Ver todos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
               </div>
-              <div id="trainer-attention-list" class="studio-attention-list"><p class="muted">Carregando alunos...</p></div>
+              <div class="premium-roster-tools">
+                <label class="premium-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">Buscar alunos</span><input id="dashboard-student-search" type="search" placeholder="Buscar aluno pelo nome" autocomplete="off"></label>
+                <label class="sr-only" for="dashboard-student-filter">Filtrar alunos por situação</label>
+                <select id="dashboard-student-filter" class="premium-select" aria-label="Filtrar alunos por situação">
+                  <option value="all">Todos os alunos</option>
+                  <option value="missing">Sem ficha</option>
+                  <option value="idle">Sem treino recente</option>
+                  <option value="recent">Treinaram recentemente</option>
+                </select>
+              </div>
+              <div class="premium-roster-scroll">
+                <table class="premium-roster-table">
+                  <thead><tr><th scope="col">ALUNO</th><th scope="col">FICHAS</th><th scope="col">ÚLTIMO TREINO</th><th scope="col">STATUS</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+                  <tbody id="trainer-attention-list"><tr><td colspan="5">Carregando alunos...</td></tr></tbody>
+                </table>
+              </div>
+              <div class="premium-roster-footer"><span id="premium-roster-total">Carregando...</span><button type="button" class="premium-link" data-nav-to="students">Gerenciar alunos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
             </article>
 
-            <article class="panel-card premium-activity-card">
-              <div class="card-heading">
-                <div><h3>Atividade recente</h3><p class="muted">Últimas sessões concluídas pelos alunos.</p></div>
-                <span class="premium-card-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3zM3 9h18M8 2v4M16 2v4"/></svg></span>
+            <article class="premium-section premium-feed">
+              <div class="premium-section-heading">
+                <div><h3>Atividade recente</h3><p>Últimas sessões concluídas.</p></div>
+                <span class="premium-live-label"><span aria-hidden="true"></span> HISTÓRICO</span>
               </div>
-              <div id="recent-activity" class="premium-activity-list"><p class="muted">Carregando atividades...</p></div>
-              <button type="button" class="premium-card-footer" data-nav-to="history">Abrir histórico completo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+              <div id="recent-activity" class="premium-activity-list" aria-live="polite"><p class="muted">Carregando atividades...</p></div>
+              <div class="premium-feed-footer"><button type="button" class="premium-link" data-nav-to="history">Histórico completo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
             </article>
           </div>
 
           <div class="premium-analysis-grid">
-            <article class="panel-card premium-chart-card">
-              <div class="card-heading">
-                <div><span class="premium-section-label">EVOLUÇÃO</span><h3>Sessões nos últimos 7 dias</h3><p class="muted">Treinos concluídos por dia, com base nos registros dos alunos.</p></div>
-                <span class="premium-chart-legend"><i aria-hidden="true"></i> Sessões</span>
+            <article class="premium-section premium-performance">
+              <div class="premium-section-heading">
+                <div><h3>Frequência de treinos</h3><p>Sessões concluídas nos últimos 7 dias.</p></div>
+                <span class="premium-filter-caption">ÚLTIMOS 7 DIAS</span>
               </div>
-              <div id="overview-progress" class="premium-week-chart" aria-label="Gráfico de sessões concluídas nos últimos sete dias"></div>
+              <div id="overview-progress" class="premium-week-chart" aria-label="Treinos concluídos por dia"></div>
+              <div class="premium-performance-summary"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> <strong id="stat-logs">—</strong> sessões no histórico</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg> <strong id="stat-workouts">—</strong> fichas criadas</span></div>
             </article>
 
-            <div class="premium-side-panels">
-              <article class="panel-card premium-highlights-card">
-                <div class="card-heading"><div><h3>Indicadores da equipe</h3><p class="muted">Movimento recente e feedbacks.</p></div></div>
-                <div id="trainer-weekly-stats" class="mini-stats-grid premium-mini-stats"></div>
-              </article>
-              <article class="panel-card trainer-feedback-overview premium-feedback-card">
-                <div class="card-heading">
-                  <div><h3>Feedback dos alunos</h3><p class="muted">Como os alunos avaliaram seus treinos.</p></div>
-                  <span class="premium-card-symbol">✳</span>
+            <aside class="premium-side-column">
+              <article class="premium-section premium-priorities">
+                <div class="premium-section-heading"><div><h3>Precisa de atenção</h3><p>O que acompanhar agora.</p></div><span class="premium-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M5 21V4m0 1c5-3 9 3 14 0v12c-5 3-9-3-14 0"/></svg></span></div>
+                <div class="premium-priority-list">
+                  <button type="button" class="premium-priority-row" data-nav-to="students"><span class="premium-priority-dot premium-priority-amber"></span><span><strong>Sem ficha publicada</strong><small>Alunos aguardando treino</small></span><b id="premium-missing-count">—</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+                  <button type="button" class="premium-priority-row" data-nav-to="students"><span class="premium-priority-dot premium-priority-muted"></span><span><strong>Sem atividade recente</strong><small>Alunos com ficha e sem treino em 7 dias</small></span><b id="premium-idle-count">—</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
+                <details class="premium-more-metrics">
+                  <summary>Mais indicadores <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+                  <div id="trainer-weekly-stats" class="mini-stats-grid premium-mini-stats"></div>
+                </details>
+              </article>
+              <article class="premium-section premium-feedback">
+                <div class="premium-section-heading"><div><h3>Feedback dos alunos</h3><p>Como estão avaliando as sessões.</p></div></div>
                 <div id="trainer-latest-feedback" class="trainer-feedback-list"></div>
               </article>
-            </div>
+            </aside>
           </div>
         </section>
 
