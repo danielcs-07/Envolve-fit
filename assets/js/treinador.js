@@ -30,6 +30,7 @@ import {
 
 import { renderPRList } from "./pr-ui.mjs";
 import { bestRepProgress } from "./studio-metrics.mjs";
+import { sessionsLastSevenDays } from "./trainer-weekly-stats.mjs";
 import { validWorkoutFeedback, feedbackStars, feedbackEffort } from "./feedback-utils.mjs";
 import {
   draftKey, writeDraft, readDraft, removeDraft, clearUserDrafts
@@ -757,12 +758,21 @@ function renderLogs() {
   });
 
   if (!logs.length) {
-    recent.append(emptyMessage("Aguardando atividades dos alunos."));
+    recent.append(emptyMessage("As sessões concluídas aparecerão aqui."));
   } else {
     logs.slice(0, 4).forEach(log => {
       const student = students.find(s => s.id === log.studentId);
-      recent.append(element("p", "activity-item",
-        `${student?.name || "Aluno"} · ${log.workoutName || "Treino"} · ${dateLabel(log.createdAt)}`));
+      const row = element("div", "premium-activity-item");
+      const marker = element("span", "premium-activity-check", "✓");
+      marker.setAttribute("aria-hidden", "true");
+      const details = element("div", "premium-activity-details");
+      details.append(
+        element("strong", "", student?.name || "Aluno"),
+        element("small", "", log.workoutName || "Treino concluído")
+      );
+      const date = element("span", "premium-activity-date", dateLabel(log.createdAt));
+      row.append(marker, details, date);
+      recent.append(row);
     });
   }
 }
@@ -889,6 +899,12 @@ $("trainer-progress-exercise").addEventListener("change", renderTrainerExerciseC
 $("trainer-progress-metric").addEventListener("change", renderTrainerExerciseChart);
 
 function renderDashboard() {
+  const weekLogs = recentLogs(logs);
+  const weekStudents = new Set(weekLogs.map(log => log.studentId)).size;
+  $("premium-week-count").textContent = String(weekLogs.length);
+  $("premium-week-students").textContent = weekStudents
+    ? `${weekStudents} ${weekStudents === 1 ? "aluno treinou" : "alunos treinaram"} neste período`
+    : "Nenhum treino concluído neste período";
   $("stat-students").textContent = students.length;
   $("stat-workouts").textContent = workouts.length;
   $("stat-published").textContent =
@@ -941,9 +957,8 @@ function renderDashboard() {
       attention.append(row);
     });
   }
-  const weekLogs = recentLogs(logs);
   [
-    ["📅", "Treinos desta semana", String(weekLogs.length)],
+    ["📅", "Treinos nos últimos 7 dias", String(weekLogs.length)],
     ["💪", "Alunos que treinaram", String(new Set(weekLogs.map(log => log.studentId)).size)],
     ["⏱️", "Último registro", logs.length ? dateLabel(logs[0].createdAt) : "Ainda não há"],
     ["💬", "Feedbacks recebidos", String(ratedLogs.length)]
@@ -957,13 +972,12 @@ function renderDashboard() {
   const overview = $("overview-progress");
   overview.replaceChildren();
 
-  const points = [...logs].reverse().map((log, index) => ({
-    label: `${index + 1}`,
-    value: (log.exercises || []).reduce((max, ex) =>
-      Math.max(max, ...(ex.series || []).map(s => Number(s.weight) || 0)), 0)
-  })).filter(point => point.value > 0);
-
-  drawBars(overview, points, "kg");
+  const points = sessionsLastSevenDays(logs);
+  if (points.some(point => point.value > 0)) {
+    drawBars(overview, points, "treinos");
+  } else {
+    overview.append(emptyMessage("Sem sessões concluídas nos últimos 7 dias."));
+  }
 }
 
 async function refreshData() {
