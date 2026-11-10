@@ -59,7 +59,7 @@ function Icon({ name, size = 20 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] || paths.home}</svg>;
 }
 function Page({ id, children }) {
-  return <motion.section key={id} {...movement} transition={smooth} className="page-view">{children}</motion.section>;
+  return <section data-page={id} className="page-view">{children}</section>;
 }
 function Chip({ children, tone = "neutral" }) { return <span className={"chip " + tone}>{children}</span>; }
 function Headline({ tag, title, subtitle, button }) {
@@ -225,9 +225,12 @@ export default function App() {
         <div className="topbar-actions"><div className="role-switch" role="group" aria-label="Área do aplicativo"><button className={role === "trainer" ? "active" : ""} onClick={() => chooseRole("trainer")}>Treinador</button><button className={role === "student" ? "active" : ""} onClick={() => chooseRole("student")}>Aluno</button></div><span className="top-avatar">EF</span></div>
       </header>
       <div className="demo-note"><span className="demo-pulse"/> DEMONSTRAÇÃO INTERATIVA <span>· Sem conexão com dados reais</span></div>
-      <main className="page-content"><AnimatePresence mode="wait">
-        {role === "trainer" ? <TrainerPage key={"trainer:" + page} page={page} openClient={setSelectedClient} openNew={() => setBuilderOpen(true)} workouts={workouts}/> :
-          <StudentPage key={"student:" + page} page={page} setPage={setPage} done={done} setDone={setDone} completed={completed} setCompleted={setCompleted}/>}
+      <main className="page-content"><AnimatePresence mode="wait" initial={false}>
+        <motion.div key={role + ":" + page} {...movement} transition={smooth}>
+          {role === "trainer"
+            ? <TrainerPage page={page} openClient={setSelectedClient} openNew={() => setBuilderOpen(true)} workouts={workouts}/>
+            : <StudentPage page={page} setPage={setPage} done={done} setDone={setDone} completed={completed} setCompleted={setCompleted}/>}
+        </motion.div>
       </AnimatePresence></main>
       <nav className="mobile-nav" aria-label="Navegação móvel">{nav.map(([slug, label]) => <button key={slug} onClick={() => setPage(slug)} className={page === slug ? "active" : ""} aria-current={page === slug ? "page" : undefined}>
         <Icon name={slug} size={19}/><span>{label}</span></button>)}</nav>
