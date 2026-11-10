@@ -898,13 +898,95 @@ $("trainer-progress-student").addEventListener("change", renderProgress);
 $("trainer-progress-exercise").addEventListener("change", renderTrainerExerciseChart);
 $("trainer-progress-metric").addEventListener("change", renderTrainerExerciseChart);
 
+function renderTrainerRoster() {
+  const tableBody = $("trainer-attention-list");
+  tableBody.replaceChildren();
+  const search = $("dashboard-student-search").value.trim().toLocaleLowerCase("pt-BR");
+  const filter = $("dashboard-student-filter").value;
+  const weekStart = Date.now() - 7 * 86400000;
+
+  const roster = students.map(student => {
+    const published = workouts.filter(workout =>
+      workout.studentId === student.id && workout.status === "published");
+    const studentLogs = logs.filter(log => log.studentId === student.id);
+    const latestLog = studentLogs[0] || null;
+    const date = latestLog ? timestampDate(latestLog.createdAt) : null;
+    const fresh = studentLogs.some(log => {
+      const stamp = timestampDate(log.createdAt);
+      return stamp && stamp.getTime() >= weekStart;
+    });
+    const status = !published.length ? "missing" : fresh ? "recent" : "idle";
+    return { student, published, date, status, priority: status === "missing" ? 0 : status === "idle" ? 1 : 2 };
+  }).sort((a, b) => a.priority - b.priority ||
+      String(a.student.name || "").localeCompare(String(b.student.name || ""), "pt-BR"));
+
+  $("premium-missing-count").textContent = String(roster.filter(row => row.status === "missing").length);
+  $("premium-idle-count").textContent = String(roster.filter(row => row.status === "idle").length);
+
+  const visible = roster.filter(row => {
+    const name = String(row.student.name || "").toLocaleLowerCase("pt-BR");
+    return name.includes(search) && (filter === "all" || row.status === filter);
+  });
+  $("premium-roster-total").textContent =
+    `${visible.length} de ${students.length} ${students.length === 1 ? "aluno" : "alunos"}`;
+
+  if (!visible.length) {
+    const row = element("tr");
+    const message = element("td", "premium-roster-empty",
+      students.length ? "Nenhum aluno corresponde aos filtros." : "Nenhum aluno ativo cadastrado ainda.");
+    message.colSpan = 5;
+    row.append(message);
+    tableBody.append(row);
+    return;
+  }
+
+  visible.slice(0, 7).forEach(({ student, published, date, status }) => {
+    const row = element("tr");
+    const identity = element("td", "premium-roster-person");
+    const avatar = element("span", "premium-roster-avatar",
+      String(student.name || "A").trim().slice(0, 1).toLocaleUpperCase("pt-BR"));
+    avatar.setAttribute("aria-hidden", "true");
+    const copy = element("div", "premium-roster-identity");
+    copy.append(element("strong", "", student.name || "Aluno"),
+      element("small", "", student.email || "Conta ativa"));
+    identity.append(avatar, copy);
+    const plans = element("td", "premium-roster-cell", String(published.length));
+    plans.setAttribute("data-label", "Fichas");
+    const last = element("td", "premium-roster-cell",
+      date ? date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : "Sem registro");
+    last.setAttribute("data-label", "Último treino");
+    const statusCell = element("td", "premium-roster-status");
+    const badge = element("span", "premium-status",
+      status === "missing" ? "Sem ficha" : status === "idle" ? "Sem treino recente" : "Em atividade");
+    badge.dataset.state = status;
+    statusCell.append(badge);
+    const actions = element("td", "premium-roster-action");
+    const open = element("button", "premium-row-open", "Ver fichas");
+    open.type = "button";
+    open.setAttribute("aria-label", "Ver fichas de " + (student.name || "aluno"));
+    open.addEventListener("click", () => {
+      $("trainer-workout-search").value = "";
+      $("trainer-workout-status").value = "";
+      $("trainer-workout-student").value = student.id;
+      renderWorkouts();
+      showTab("workouts");
+    });
+    actions.append(open);
+    row.append(identity, plans, last, statusCell, actions);
+    tableBody.append(row);
+  });
+}
+$("dashboard-student-search").addEventListener("input", renderTrainerRoster);
+$("dashboard-student-filter").addEventListener("change", renderTrainerRoster);
+
 function renderDashboard() {
   const weekLogs = recentLogs(logs);
   const weekStudents = new Set(weekLogs.map(log => log.studentId)).size;
   $("premium-week-count").textContent = String(weekLogs.length);
-  $("premium-week-students").textContent = weekStudents
-    ? `${weekStudents} ${weekStudents === 1 ? "aluno treinou" : "alunos treinaram"} neste período`
-    : "Nenhum treino concluído neste período";
+  $("premium-week-student-count").textContent = String(weekStudents);
+  $("premium-week-students").textContent =
+    weekStudents ? `${weekStudents} ${weekStudents === 1 ? "aluno ativo" : "alunos ativos"} na semana`
+      : "Sem sessões recentes";
   $("stat-students").textContent = students.length;
   $("stat-workouts").textContent = workouts.length;
   $("stat-published").textContent =
@@ -927,36 +1009,8 @@ function renderDashboard() {
       if (entry) feedbackBox.append(entry);
     });
   }
-  const attention = $("trainer-attention-list");
-  attention.replaceChildren();
-  const weekAgo = Date.now() - 7 * 86400000;
-  if (!students.length) {
-    attention.append(element("p", "empty-text", "Ainda não há alunos ativos."));
-  } else {
-    const ordered = students.map(student => {
-      const published = workouts.filter(w => w.studentId === student.id && w.status === "published");
-      const fresh = logs.some(log => log.studentId === student.id &&
-        ((log.createdAt?.seconds || 0) * 1000) >= weekAgo);
-      const priority = published.length ? (fresh ? 2 : 1) : 0;
-      return { student, published, fresh, priority };
-    }).sort((a,b) => a.priority - b.priority);
-    ordered.slice(0, 8).forEach(({student,published,fresh}) => {
-      const row = element("div", "studio-attention-row");
-      const avatar = element("span", "studio-attention-avatar",
-        (student.name || "A").trim().slice(0,1).toLocaleUpperCase("pt-BR"));
-      const info = element("div", "studio-attention-copy");
-      info.append(element("strong", "", student.name || "Aluno"));
-      info.append(element("small", "", published.length
-        ? published.length + " ficha" + (published.length > 1 ? "s publicadas" : " publicada")
-        : "Nenhuma ficha publicada"));
-      const status = element("span", "studio-attention-status",
-        !published.length ? "Sem ficha" :
-          fresh ? "Com registro recente" : "Sem treino nos últimos 7 dias");
-      status.dataset.state = !published.length ? "missing" : fresh ? "recent" : "idle";
-      row.append(avatar, info, status);
-      attention.append(row);
-    });
-  }
+  renderTrainerRoster();
+  const weekLogs = recentLogs(logs);
   [
     ["📅", "Treinos nos últimos 7 dias", String(weekLogs.length)],
     ["💪", "Alunos que treinaram", String(new Set(weekLogs.map(log => log.studentId)).size)],
